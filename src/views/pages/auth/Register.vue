@@ -1,37 +1,46 @@
 <script setup>
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
-import { useAuthStore } from '@/stores/auth';
+import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const name = ref('');
 const email = ref('');
 const password = ref('');
+const confirmPassword = ref('');
 const checked = ref(false);
 
 const loading = ref(false);
 const error = ref('');
 const success = ref('');
 
-const auth = useAuthStore();
 const router = useRouter();
 
-const handleLogin = async () => {
-    loading.value = true;
+const handleRegister = async () => {
     error.value = '';
     success.value = '';
+    loading.value = true;
+
+    if (password.value !== confirmPassword.value) {
+        error.value = 'Passwords do not match';
+        loading.value = false;
+        return;
+    }
 
     try {
-        await auth.login({
+        const response = await axios.post('http://localhost:8000/api/register', {
             name: name.value,
             email: email.value,
-            password: password.value
+            password: password.value,
+            password_confirmation: confirmPassword.value
         });
 
-        success.value = 'Login successful!';
-        window.location.href = '/dashboard';
+        success.value = 'Registration successful! Redirecting...';
+        setTimeout(() => {
+            router.push('/auth/login');
+        }, 1500);
     } catch (err) {
-        error.value = err?.response?.data?.message || 'Login failed.';
+        error.value = err.response?.data?.message || (err.response?.data?.errors && Object.values(err.response.data.errors).flat().join(', ')) || 'Registration failed.';
     } finally {
         loading.value = false;
     }
@@ -45,18 +54,18 @@ const handleLogin = async () => {
             <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
                 <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
                     <div class="text-center mb-8">
-                        <!-- SVG Logo included here -->
-                        <!-- ... SVG content ... -->
-                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Welcome Back</h2>
-                        <p class="text-gray-600 dark:text-gray-400">Please sign in to your account</p>
+                        <!-- Optional logo or icon here -->
+                        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Create an Account</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Sign up to get started</p>
                     </div>
 
-                    <!-- Login Form -->
-                    <form @submit.prevent="handleLogin" class="space-y-6 w-full max-w-sm mx-auto">
+                    <!-- Register Form -->
+                    <form @submit.prevent="handleRegister" class="space-y-6 w-full max-w-sm mx-auto">
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                             <input v-model="name" type="text" id="name" required class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" />
                         </div>
+
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                             <input v-model="email" type="email" id="email" required class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" />
@@ -73,15 +82,28 @@ const handleLogin = async () => {
                             />
                         </div>
 
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center">
-                                <input v-model="checked" type="checkbox" class="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Remember me</span>
-                            </label>
-                            <a href="#" class="text-sm text-primary-600 hover:underline dark:text-primary-400">Forgot password?</a>
+                        <div>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
+                            <input
+                                v-model="confirmPassword"
+                                type="password"
+                                id="confirmPassword"
+                                required
+                                class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
                         </div>
 
-                        <button type="submit" class="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">Sign In</button>
+                        <div v-if="error" class="text-sm text-red-600 dark:text-red-400">{{ error }}</div>
+                        <div v-if="success" class="text-sm text-green-600 dark:text-green-400">{{ success }}</div>
+
+                        <button type="submit" class="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            {{ loading ? 'Registering...' : 'Register' }}
+                        </button>
+
+                        <p class="text-sm text-center text-gray-600 dark:text-gray-400">
+                            Already have an account?
+                            <router-link to="/auth/login" class="text-primary-600 hover:underline dark:text-primary-400">Login</router-link>
+                        </p>
                     </form>
                 </div>
             </div>
