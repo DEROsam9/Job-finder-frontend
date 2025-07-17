@@ -46,7 +46,7 @@ const model = ref([
             {
                 label: 'Auth',
                 items: [
-                    { label: 'Login', icon: 'pi pi-fw pi-sign-in', to: '/auth/login' },
+                    //{ label: 'Login', icon: 'pi pi-fw pi-sign-in', to: '/auth/login' },
                     { label: 'Register', icon: 'pi pi-fw pi-user-plus', to: '/auth/register' },
                     {
                         label: 'Logout',

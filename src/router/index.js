@@ -49,15 +49,15 @@ const router = createRouter({
     ]
 });
 
-router.beforeEach((to, from, next) => {
-    const auth = useAuthStore();
-    const isLoggedIn = !!auth.token;
+// router.beforeEach((to, from, next) => {
+//     const auth = useAuthStore();
+//     const isLoggedIn = !!auth.token;
 
-    if (to.meta.requiresAuth && !isLoggedIn) {
-        return next('/auth/login');
-    }
+//     if (to.meta.requiresAuth && !isLoggedIn) {
+//        // return next('/auth/login');
+//     }
 
-    next();
-});
+//     next();
+// });
 
 export default router;
