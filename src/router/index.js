@@ -1,5 +1,4 @@
 import AppLayout from '@/layout/AppLayout.vue';
-import { useAuthStore } from '@/stores/auth';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -43,21 +42,31 @@ const router = createRouter({
                     path: '/landing',
                     name: 'landing',
                     component: () => import('@/views/pages/Landing.vue')
+                },
+                {
+                    path: '/applications/:id',
+                    name: 'application.view',
+                    component: () => import('@/views/pages/ApplicationView.vue')
+                },
+                {
+                    path: '/applications/:id/edit',
+                    name: 'application.edit',
+                    component: () => import('@/views/pages/ApplicationEdit.vue')
                 }
             ]
         }
     ]
 });
 
-router.beforeEach((to, from, next) => {
-    const auth = useAuthStore();
-    const isLoggedIn = !!auth.token;
+// router.beforeEach((to, from, next) => {
+//     const auth = useAuthStore();
+//     const isLoggedIn = !!auth.token;
 
-    if (to.meta.requiresAuth && !isLoggedIn) {
-        return next('/auth/login');
-    }
+//     if (to.meta.requiresAuth && !isLoggedIn) {
+//         return next('/auth/login');
+//     }
 
-    next();
-});
+//     next();
+// });
 
 export default router;

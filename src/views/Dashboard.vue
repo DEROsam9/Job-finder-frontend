@@ -1,22 +1,32 @@
 <script setup>
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import BestSellingWidget from '@/components/dashboard/BestSellingWidget.vue';
 import NotificationsWidget from '@/components/dashboard/NotificationsWidget.vue';
 import RecentSalesWidget from '@/components/dashboard/RecentSalesWidget.vue';
 import RevenueStreamWidget from '@/components/dashboard/RevenueStreamWidget.vue';
 import StatsWidget from '@/components/dashboard/StatsWidget.vue';
+
+const breadcrumbItems = [
+    { label: 'Clients', to: '/customers' },
+    { label: 'Application', to: '/applications' }
+];
 </script>
 
 <template>
-    <div class="grid grid-cols-12 gap-8">
-        <StatsWidget />
+    <div>
+        <BreadCrumb :items="breadcrumbItems" />
 
-        <div class="col-span-12 xl:col-span-6">
-            <RecentSalesWidget />
-            <BestSellingWidget />
-        </div>
-        <div class="col-span-12 xl:col-span-6">
-            <RevenueStreamWidget />
-            <NotificationsWidget />
+        <div class="grid grid-cols-12 gap-8">
+            <StatsWidget />
+
+            <div class="col-span-12 xl:col-span-6">
+                <RecentSalesWidget />
+                <BestSellingWidget />
+            </div>
+            <div class="col-span-12 xl:col-span-6">
+                <RevenueStreamWidget />
+                <NotificationsWidget />
+            </div>
         </div>
     </div>
 </template>
