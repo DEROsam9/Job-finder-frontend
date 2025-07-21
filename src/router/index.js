@@ -27,13 +27,34 @@ const router = createRouter({
                     path: '/applications',
                     component: () => import('@/views/pages/Application.vue')
                 },
+                
                 {
                     path: '/category',
                     component: () => import('@/views/pages/Category.vue')
                 },
                 {
+                    path: '/category/create',
+                    name: 'CategoryCreate',
+                    component: () => import('@/views/pages/CategoryCreate.vue')
+                },
+                {
+                    path: '/category/edit/:id',
+                    name: 'CategoryEdit',
+                    component: () => import('@/views/pages/CategoryEdit.vue')
+                },
+                {
                     path: '/jobs',
                     component: () => import('@/views/pages/Jobs.vue')
+                },
+                {
+                    path: '/jobs/create',
+                    name: 'JobsCreate',
+                    component: () => import('@/views/pages/JobsCreate.vue')
+                },
+                {
+                    path: '/jobs/edit/:id',
+                    name: 'JobsEdit',
+                    component: () => import('@/views/pages/JobsEdit.vue')
                 },
                 {
                     path: '/setting',

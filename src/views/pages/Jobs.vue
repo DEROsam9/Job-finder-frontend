@@ -3,7 +3,7 @@
     <div class="jobs-container p-4">
       <div class="header flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">Job Titles</h2>
-        <button @click="openCreateModal" class="btn btn-primary">Create New Job Title</button>
+        <button @click="goToCreatePage" class="btn btn-primary">Add Job Title</button>
       </div>
 
       <table class="min-w-full border border-gray-200 rounded">
@@ -11,6 +11,7 @@
           <tr class="bg-gray-100 text-left">
             <th class="py-2 px-4 border-b border-gray-300">Title</th>
             <th class="py-2 px-4 border-b border-gray-300">Category</th>
+            <th class="py-2 px-4 border-b border-gray-300">Slots</th>
             <th class="py-2 px-4 border-b border-gray-300">Actions</th>
           </tr>
         </thead>
@@ -18,11 +19,17 @@
           <tr v-for="job in jobs" :key="job.id" class="hover:bg-gray-50">
             <td class="py-2 px-4 border-b border-gray-300">{{ job.name }}</td>
             <td class="py-2 px-4 border-b border-gray-300">
-              {{ getCategoryName(job.job_category_id) }}
+                {{ job.job_category?.name || 'Unknown' }}
             </td>
             <td class="py-2 px-4 border-b border-gray-300">
-              <button @click="openEditModal(job)" class="text-blue-600 hover:underline mr-2">Edit</button> |
-              <button @click="deleteJob(job.id)" class="text-red-600 hover:underline ml-2">Delete</button>
+              {{ job.slots }}
+            </td> 
+            <td class="py-2 px-4 border-b border-gray-300 relative">
+              <i
+                class="pi pi-ellipsis-v cursor-pointer"
+                style="font-size: 0.8rem"
+                @click="toggleMenu($event, job)"
+              ></i>
             </td>
           </tr>
           <tr v-if="jobs.length === 0">
@@ -31,162 +38,135 @@
         </tbody>
       </table>
 
-      <!-- Modal -->
-<div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-  <div class="bg-white rounded shadow-lg p-10" style="width: 520px;">
-    <h3 class="text-lg font-semibold mb-4">{{ isEditing ? 'Edit Job Title' : 'Create New Job Title' }}</h3>
-    <form @submit.prevent="isEditing ? updateJob() : createJob()">
-      <div class="mb-3">
-        <label class="block mb-1 font-medium" for="name">Title</label>
-        <input v-model="form.name" id="name" type="text" class="w-full border border-gray-300 rounded px-3 py-2" required />
-      </div>
-      <div class="mb-3">
-        <label class="block mb-1 font-medium" for="slug">Slug</label>
-        <input v-model="form.slug" id="slug" type="text" class="w-full border border-gray-300 rounded px-3 py-2" required />
-      </div>
-      <div class="mb-3">
-        <label class="block mb-1 font-medium" for="category">Category</label>
-        <select v-model="form.job_category_id" id="category" class="w-full border border-gray-300 rounded px-3 py-2" required>
-          <option value="" disabled>Select Category</option>
-          <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option>
-        </select>
-      </div>
-      <div class="mb-3">
-        <label class="block mb-1 font-medium" for="description">Description</label>
-        <textarea v-model="form.description" id="description" class="w-full border border-gray-300 rounded px-3 py-2" rows="3"></textarea>
-      </div>
-      <div class="mb-3">
-        <label class="block mb-1 font-medium" for="slots">Slots</label>
-        <input v-model.number="form.slots" id="slots" type="number" min="0" class="w-full border border-gray-300 rounded px-3 py-2" required />
-      </div>
-      <div class="flex justify-end space-x-3">
-        <button type="button" @click="closeModal" class="btn btn-secondary">Cancel</button>
-        <button type="submit" class="btn btn-primary">{{ isEditing ? 'Update' : 'Create' }}</button>
-      </div>
-    </form>
-  </div>
-</div>
+      <OverlayPanel ref="op">
+        <Menu :model="menuItems" />
+      </OverlayPanel>
+
+      <CustomPagination
+        :totalRecords="totalJobs"
+        :rowsPerPage="rowsPerPage"
+        :currentPage="currentPage"
+        @update:currentPage="onPageChange"
+      />
+
 
     </div>
   </div>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import OverlayPanel from 'primevue/overlaypanel';
+import Menu from 'primevue/menu';
+import { useRouter } from 'vue-router';
+import CustomPagination from '../../components/CustomPagination.vue';
+
 
 export default {
   name: 'Jobs',
-  data() {
-    return {
-      jobs: [],
-      categories: [],
-      showModal: false,
-      isEditing: false,
-      form: {
-        id: null,
-        name: '',
-        slug: '',
-        job_category_id: '',
-        description: '',
-        slots: 0,
-      },
-    };
+  components: {
+    CustomPagination,
+    OverlayPanel,
+    Menu,
   },
-  methods: {
-    fetchJobs() {
-      axios.get('http://localhost:8000/api/v1/careers')
+  setup() {
+    const router = useRouter();
+    const op = ref(null);
+    const currentJob = ref(null);
+
+    const jobs = ref([]);
+    const categories = ref([]);
+    const currentPage = ref(1);
+    const rowsPerPage = ref(8);
+    const totalJobs = ref(0);
+
+    const fetchJobs = (page = 1) => {
+      axios.get(`http://localhost:8000/api/v1/careers?page=${page}&limit=${rowsPerPage.value}`)
         .then(response => {
-          this.jobs = response.data;
+          const responseData = response.data.data;
+          jobs.value = responseData.data; // the actual careers
+          totalJobs.value = responseData.total;
+          currentPage.value = responseData.current_page; // 1-indexed
         })
         .catch(error => {
           console.error('Error fetching jobs:', error);
         });
-    },
-    fetchCategories() {
+    };
+
+    const fetchCategories = () => {
       axios.get('http://localhost:8000/api/v1/job-categories')
         .then(response => {
-          this.categories = response.data;
+          categories.value = response.data;
         })
         .catch(error => {
           console.error('Error fetching categories:', error);
         });
-    },
-    getCategoryName(categoryId) {
-      const category = this.categories.find(c => c.id === categoryId);
-      return category ? category.name : 'N/A';
-    },
-    openCreateModal() {
-      this.resetForm();
-      this.isEditing = false;
-      this.showModal = true;
-    },
-    openEditModal(job) {
-      this.form = { ...job };
-      this.isEditing = true;
-      this.showModal = true;
-    },
-    closeModal() {
-      this.showModal = false;
-    },
-    createJob() {
-      axios.post('http://localhost:8000/api/v1/careers', {
-        name: this.form.name,
-        slug: this.form.slug,
-        description: this.form.description,
-        job_category_id: this.form.job_category_id,
-        slots: this.form.slots
-      })
-      .then(() => {
-        this.fetchJobs();
-        this.closeModal();
-      })
-      .catch(error => {
-        console.error('Error creating job:', error.response.data);
-      });
-    },
-    updateJob() {
-      axios.put(`http://localhost:8000/api/v1/careers/${this.form.id}`, {
-        name: this.form.name,
-        slug: this.form.slug,
-        description: this.form.description,
-        job_category_id: this.form.job_category_id,
-        status_id: this.form.status_id,
-        slots: this.form.slots
-      })
-      .then(() => {
-        this.fetchJobs();
-        this.closeModal();
-      })
-      .catch(error => {
-        console.error('Error updating job:', error.response.data);
-      });
-    },
-    deleteJob(id) {
+    };
+
+    const getCategoryName = (categoryId) => {
+      const category = categories.value.find(c => c.id === categoryId);
+    };
+
+    const goToCreatePage = () => {
+      router.push({ name: 'JobsCreate' });
+    };
+
+    const openEditModal = () => {
+      if (currentJob.value) {
+        router.push({ name: 'JobsEdit', params: { id: currentJob.value.id } });
+      }
+    };
+
+    const deleteJob = () => {
       if (confirm('Are you sure you want to delete this job?')) {
-        axios.delete(`http://localhost:8000/api/v1/careers/${id}`)
+        axios.delete(`http://localhost:8000/api/v1/careers/${currentJob.value.id}`)
           .then(() => {
-            this.fetchJobs();
+            fetchJobs();
           })
           .catch(error => {
             console.error('Error deleting job:', error);
           });
       }
-    },
-    resetForm() {
-      this.form = {
-        id: null,
-        name: '',
-        job_category_id: '',
-        description: '',
-        slots: 0,
-        status_id: '',
-      };
-    },
+    };
+
+    const toggleMenu = (event, job) => {
+      currentJob.value = job;
+      op.value.toggle(event);
+    };
+
+    const menuItems = ref([
+      {
+        label: 'Actions',
+        items: [
+          { label: 'Edit', icon: 'pi pi-pencil', command: openEditModal },
+          { label: 'Delete', icon: 'pi pi-trash', command: deleteJob },
+        ],
+      },
+    ]);
+    const onPageChange = (page) => {
+      fetchJobs(page);
+    };
+
+    onMounted(() => {
+      fetchJobs(1);
+      fetchCategories();
+    });
+
+    return {
+      op,
+      jobs,
+      categories,
+      menuItems,
+      toggleMenu,
+      getCategoryName,
+      goToCreatePage,
+      rowsPerPage,
+      currentPage,
+      totalJobs,
+      onPageChange,
+    };
   },
-    mounted() {
-      this.fetchJobs();
-      this.fetchCategories();
-    },
 };
 </script>
 
@@ -223,4 +203,3 @@ export default {
   background-color: #d1d5db;
 }
 </style>
-
