@@ -1,10 +1,9 @@
 <script setup>
-import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { useAuthStore } from '@/stores/auth';
+import axios from 'axios'; // Import axios
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-const name = ref('');
 const email = ref('');
 const password = ref('');
 const checked = ref(false);
@@ -22,15 +21,29 @@ const handleLogin = async () => {
     success.value = '';
 
     try {
-        await auth.login({
-            name: name.value,
-            email: email.value,
-            password: password.value
+        // Call your Laravel login API endpoint
+        const response = await axios.post('/v1/auth/login', {
+            username: email.value,
+            password: password.value,
+            client_id: import.meta.env.VITE_CLIENT_ID, // or process.env.CLIENT_ID
+            client_secret: import.meta.env.VITE_CLIENT_SECRET // make sure these env vars exist and are exposed
         });
 
+        // response.data should contain user info and token
+        const { token, user } = response.data;
+
+        // Save token & user in your auth store
+        auth.token = token;
+        auth.user = user;
+
         success.value = 'Login successful!';
-        window.location.href = '/dashboard';
+
+        console.log('Token after login:', token);
+
+        // Redirect to dashboard (you can use router.push for SPA navigation)
+        router.push('/dashboard');
     } catch (err) {
+        // Show backend error message or fallback
         error.value = err?.response?.data?.message || 'Login failed.';
     } finally {
         loading.value = false;
@@ -53,10 +66,6 @@ const handleLogin = async () => {
 
                     <!-- Login Form -->
                     <form @submit.prevent="handleLogin" class="space-y-6 w-full max-w-sm mx-auto">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                            <input v-model="name" type="text" id="name" required class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" />
-                        </div>
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                             <input v-model="email" type="email" id="email" required class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" />

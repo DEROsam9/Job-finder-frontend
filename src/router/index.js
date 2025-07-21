@@ -1,9 +1,25 @@
 import AppLayout from '@/layout/AppLayout.vue';
+import { useAuthStore } from '@/stores/auth';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
     history: createWebHistory(),
     routes: [
+        {
+            path: '/auth/login',
+            name: 'login',
+            component: () => import('@/views/pages/auth/Login.vue')
+        },
+        {
+            path: '/auth/register',
+            name: 'register',
+            component: () => import('@/views/pages/auth/Register.vue')
+        },
+        {
+            path: '/auth/logout',
+            name: 'logout',
+            component: () => import('@/views/pages/auth/Logout.vue')
+        },
         {
             path: '/',
             component: AppLayout,
@@ -58,15 +74,25 @@ const router = createRouter({
     ]
 });
 
-// router.beforeEach((to, from, next) => {
-//     const auth = useAuthStore();
-//     const isLoggedIn = !!auth.token;
+router.beforeEach(async (to, from) => {
+    const auth = useAuthStore();
 
-//     if (to.meta.requiresAuth && !isLoggedIn) {
-//         return next('/auth/login');
-//     }
+    // ✅ Wait until Pinia hydration completes
+    while (auth.token === undefined) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+    }
 
-//     next();
-// });
+    // console.log('[Router Guard] to:', to.name, '| from:', from.name, '| token:', auth.token);
+
+    if (to.meta.requiresAuth && !auth.isAuthenticated) {
+        return { name: 'login' };
+    }
+
+    if (to.name === 'login' && auth.isAuthenticated) {
+        return { name: 'dashboard' };
+    }
+
+    return true;
+});
 
 export default router;

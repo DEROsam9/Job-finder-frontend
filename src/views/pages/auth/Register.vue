@@ -1,10 +1,11 @@
 <script setup>
+import axiosClient from '@/axiosClient';
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
-import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const name = ref('');
+const phoneNumber = ref('');
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
@@ -28,9 +29,10 @@ const handleRegister = async () => {
     }
 
     try {
-        const response = await axios.post('http://localhost:8000/api/register', {
+        const response = await axiosClient.post('v1/auth/register', {
             name: name.value,
             email: email.value,
+            phone_number: phoneNumber.value,
             password: password.value,
             password_confirmation: confirmPassword.value
         });
@@ -69,6 +71,11 @@ const handleRegister = async () => {
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                             <input v-model="email" type="email" id="email" required class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                        </div>
+
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                            <input v-model="phoneNumber" type="text" id="phone" required class="mt-1 w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" />
                         </div>
 
                         <div>

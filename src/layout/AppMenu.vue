@@ -1,8 +1,10 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'; // <-- ADD THIS
 import axios from 'axios';
 import { useToast } from 'primevue/usetoast';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+
 const toast = useToast();
 
 import AppMenuItem from './AppMenuItem.vue';
@@ -10,34 +12,32 @@ import AppMenuItem from './AppMenuItem.vue';
 const router = useRouter();
 
 const logout = async () => {
-    try {
-        const token = localStorage.getItem('token');
+    console.log('Logout started'); // test log
 
-        if (token) {
+    const auth = useAuthStore();
+
+    try {
+        if (auth.token) {
             await axios.post(
-                'http://localhost:8000/api/logout',
+                'http://localhost:8000/api/v1/auth/logout',
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${auth.token}` }
                 }
             );
         }
-
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-
-        toast.add({ severity: 'success', summary: 'Logout Successful', detail: 'You have been logged out.', life: 3000 });
-
-        router.push('/landing');
     } catch (error) {
         console.error('Logout failed:', error);
+    } finally {
+        auth.logout();
+        console.log('After logout: token=', auth.token, 'isAuthenticated=', auth.isAuthenticated);
 
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-
-        toast.add({ severity: 'warn', summary: 'Logout Failed', detail: 'Something went wrong.', life: 3000 });
-
-        router.push('/');
+        try {
+            toast.add({ severity: 'success', summary: 'Logged out', detail: 'You have been logged out.', life: 3000 });
+            await router.push('/auth/login');
+        } catch (err) {
+            console.error('Error during toast or navigation:', err);
+        }
     }
 };
 

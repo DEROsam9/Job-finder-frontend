@@ -1,37 +1,42 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
+import { useToast } from 'primevue/usetoast';
 import { ref } from 'vue';
+
+const toast = useToast();
+
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
 const logout = async () => {
-    try {
-        const token = localStorage.getItem('token');
+    console.log('Logout started'); // Add this test log
 
-        if (token) {
+    const auth = useAuthStore();
+
+    try {
+        if (auth.token) {
             await axios.post(
-                'http://localhost:8000/api/logout',
+                'http://localhost:8000/api/v1/auth/logout',
                 {},
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    headers: { Authorization: `Bearer ${auth.token}` }
                 }
             );
         }
-
-        // Clear token and any auth state
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-
-        // Redirect to landing page
-        router.push('/');
     } catch (error) {
         console.error('Logout failed:', error);
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-        router.push('/');
+    } finally {
+        auth.logout();
+        console.log('After logout: token=', auth.token, 'isAuthenticated=', auth.isAuthenticated);
+
+        try {
+            toast.add({ severity: 'success', summary: 'Logged out', detail: 'You have been logged out.', life: 3000 });
+            await router.push('/v1/auth/login');
+        } catch (err) {
+            console.error('Error during toast or navigation:', err);
+        }
     }
 };
 

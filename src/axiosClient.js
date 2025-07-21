@@ -1,17 +1,15 @@
-// src/axiosClient.js
-import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
 
 const axiosClient = axios.create({
     baseURL: 'http://localhost:8000/api'
 });
 
-axiosClient.interceptors.request.use((config) => {
-    const auth = useAuthStore();
-    if (auth.token) {
-        config.headers.Authorization = `Bearer ${auth.token}`;
-    }
-    return config;
-});
+// Attach token from localStorage
+const token = localStorage.getItem('token');
+if (token) {
+    axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
+// Optional: Refresh token logic or response interceptors can go here
 
 export default axiosClient;
