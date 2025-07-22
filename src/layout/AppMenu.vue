@@ -96,7 +96,7 @@ const model = ref([
         items: [
             {
                 label: 'Setting',
-                icon: 'pi pi-cog', // Settings
+                icon: 'pi pi-spin pi-cog', // Settings
                 to: '/setting'
             },
             {
