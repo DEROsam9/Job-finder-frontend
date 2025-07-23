@@ -92,6 +92,13 @@ const handleLogin = async () => {
 
                         <button type="submit" class="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">Sign In</button>
                     </form>
+                    <div v-if="error" class="mt-4 text-red-600 dark:text-red-400">{{ error }}</div>
+                    <div v-if="success" class="mt-4 text-green-600 dark:text-green-400">{{ success }}</div>
+                    <hr />
+                    <p class="text-sm text-center text-gray-600 dark:text-gray-400">
+                        Don't have an account?
+                        <router-link to="/auth/register" class="text-primary-600 hover:underline dark:text-primary-400">Register</router-link>
+                    </p>
                 </div>
             </div>
         </div>

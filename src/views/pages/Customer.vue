@@ -74,7 +74,15 @@
                             <InputText v-model="filterModel.value" placeholder="Search by ID" />
                         </template>
                     </Column>
+                    <Column header="Actions" style="min-width: 8rem">
+                        <template #body="{ data }">
+                            <Menu :model="getActions(data)" popup :ref="(el) => (actionMenus[data.id] = el)" />
+                            <Button icon="pi pi-ellipsis-v" rounded outlined @click="actionMenus[data.id]?.toggle($event)" />
+                        </template>
+                    </Column>
                 </DataTable>
+                <!-- ✅ Add this below the table -->
+                <ConfirmDialog />
             </div>
         </div>
     </Fluid>
@@ -84,7 +92,9 @@
 import axiosClient from '@/axiosClient';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import { FilterMatchMode, FilterOperator } from '@primevue/core/api';
+import { useConfirm } from 'primevue/useconfirm';
 import { onMounted, ref } from 'vue';
+const confirm = useConfirm();
 
 const breadcrumbItems = [
     { label: 'Clients', to: '/customers' },
@@ -92,6 +102,7 @@ const breadcrumbItems = [
 ];
 const clients = ref([]);
 const loading = ref(true);
+const actionMenus = ref({});
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -130,6 +141,43 @@ const fetchClients = async () => {
 onMounted(() => {
     fetchClients();
 });
+
+const getActions = (rowData) => [
+    {
+        label: 'View',
+        icon: 'pi pi-eye',
+        command: () => {
+            console.log('View', rowData);
+            // navigateTo or open modal
+        }
+    },
+    {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        command: () => {
+            console.log('Edit', rowData);
+        }
+    },
+    {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => {
+            confirmDelete(rowData);
+        }
+    }
+];
+
+const confirmDelete = (row) => {
+    confirm.require({
+        message: `Are you sure you want to delete ${row.first_name}?`,
+        header: 'Confirm Deletion',
+        icon: 'pi pi-exclamation-triangle',
+        accept: () => {
+            // perform delete logic here
+            console.log('Deleted:', row);
+        }
+    });
+};
 </script>
 
 <style scoped>
