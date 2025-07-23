@@ -14,10 +14,21 @@
           </div>
           <div class="mb-3">
             <label class="block mb-1 font-medium" for="category">Category</label>
-            <select v-model="form.job_category_id" id="category" class="w-full border border-gray-300 rounded px-3 py-2" required>
+            <!-- <select v-model="form.job_category_id" id="category" class="w-full border border-gray-300 rounded px-3 py-2" required>
               <option value="" disabled>Select Category</option>
               <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option>
-            </select>
+            </select> -->
+            <select v-model="form.job_category_id" id="category" class="w-full border border-gray-300 rounded px-3 py-2" required>
+  <option value="" disabled>Select Category</option>
+  <option
+    v-for="category in categories"
+    :key="category?.id"
+    :value="category?.id"
+  >
+    {{ category?.name || 'Unnamed Category' }}
+  </option>
+</select>
+<!-- <p v-else>Loading categories...</p> -->
           </div>
           <div class="mb-3">
             <label class="block mb-1 font-medium" for="description">Description</label>
@@ -57,15 +68,26 @@ export default {
 
     const categories = ref([]);
 
+    // const fetchCategories = () => {
+    //   axios.get('http://localhost:8000/api/v1/job-categories')
+    //     .then(response => {
+    //       categories.value = response.data;
+    //     })
+    //     .catch(() => {
+    //       alert('Failed to load categories.');
+    //     });
+    // };
     const fetchCategories = () => {
-      axios.get('http://localhost:8000/api/v1/job-categories')
-        .then(response => {
-          categories.value = response.data;
-        })
-        .catch(() => {
-          alert('Failed to load categories.');
-        });
-    };
+  axios.get('http://localhost:8000/api/v1/job-categories')
+    .then(response => {
+      categories.value = response.data.data || [];  
+    })
+    .catch(() => {
+      alert('Failed to load categories.');
+      categories.value = [];  
+    });
+};
+
 
     const createJob = () => {
       axios.post('http://localhost:8000/api/v1/careers', form.value)
@@ -76,6 +98,7 @@ export default {
           alert('Failed to create job.');
         });
     };
+    
 
     const goBack = () => {
       router.back();
