@@ -39,7 +39,7 @@ const handleRegister = async () => {
 
         success.value = 'Registration successful! Redirecting...';
         setTimeout(() => {
-            //router.push('/');
+            router.push('/auth/login');
         }, 1500);
     } catch (err) {
         error.value = err.response?.data?.message || (err.response?.data?.errors && Object.values(err.response.data.errors).flat().join(', ')) || 'Registration failed.';
