@@ -8,7 +8,10 @@ import StatsWidget from '@/components/dashboard/StatsWidget.vue';
 
 const breadcrumbItems = [
     { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' }
+    { label: 'Application', to: '/applications' },
+    { label: 'Categories', to: '/category' },
+    { label: 'Jobs', to: '/jobs' },
+    { label: 'Payments', to: '/payments' }
 ];
 </script>
 

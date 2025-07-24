@@ -1,9 +1,9 @@
 <template>
   <div class="card">
     <div class="p-6">
-      <h2 class="text-xl font-semibold mb-4">Edit Job Title</h2>
+      <h2 class="text-xl font-semibold mb-4">{{ isEditMode ? 'Edit Job Title' : 'Create New Job Title' }}</h2>
 
-      <form @submit.prevent="updateJob">
+      <form @submit.prevent="handleSubmit">
         <div class="mb-3">
           <label class="block mb-1 font-medium" for="name">Title</label>
           <input v-model="form.name" id="name" type="text" class="w-full border border-gray-300 rounded px-3 py-2" required />
@@ -16,7 +16,9 @@
           <label class="block mb-1 font-medium" for="category">Category</label>
           <select v-model="form.job_category_id" id="category" class="w-full border border-gray-300 rounded px-3 py-2" required>
             <option value="" disabled>Select Category</option>
-            <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option>
+            <option v-for="category in categories" :key="category?.id" :value="category?.id">
+              {{ category?.name || 'Unnamed Category' }}
+            </option>
           </select>
         </div>
         <div class="mb-3">
@@ -30,7 +32,9 @@
 
         <div class="flex justify-end space-x-2">
           <button @click="goBack" type="button" class="btn btn-secondary">Cancel</button>
-          <button type="submit" class="btn btn-success">Update</button>
+          <button type="submit" :class="isEditMode ? 'btn btn-primary' : 'btn btn-success'">
+            {{ isEditMode ? 'Update' : 'Create' }}
+          </button>
         </div>
       </form>
     </div>
@@ -38,16 +42,18 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 
 export default {
-  name: 'EditJob',
+  name: 'JobForm',
   setup() {
-    const route = useRoute();
     const router = useRouter();
+    const route = useRoute();
     const jobId = route.params.id;
+
+    const isEditMode = computed(() => !!jobId);
 
     const form = ref({
       name: '',
@@ -60,22 +66,35 @@ export default {
     const categories = ref([]);
 
     const fetchJob = () => {
-      axios.get(`http://localhost:8000/api/v1/careers/${jobId}`)
-        .then(response => {
-          form.value = response.data;
-        })
-        .catch(() => {
-          alert('Failed to load job data.');
-        });
+      if (isEditMode.value) {
+        axios.get(`http://localhost:8000/api/v1/careers/${jobId}`)
+          .then(response => {
+            form.value = response.data;
+          })
+          .catch(() => {
+            alert('Failed to load job data.');
+          });
+      }
     };
 
     const fetchCategories = () => {
       axios.get('http://localhost:8000/api/v1/job-categories')
         .then(response => {
-          categories.value = response.data;
+          categories.value = response.data.data || [];
         })
         .catch(() => {
           alert('Failed to load categories.');
+          categories.value = [];
+        });
+    };
+
+    const createJob = () => {
+      axios.post('http://localhost:8000/api/v1/careers', form.value)
+        .then(() => {
+          router.push('/jobs');
+        })
+        .catch(() => {
+          alert('Failed to create job.');
         });
     };
 
@@ -89,16 +108,24 @@ export default {
         });
     };
 
+    const handleSubmit = () => {
+      if (isEditMode.value) {
+        updateJob();
+      } else {
+        createJob();
+      }
+    };
+
     const goBack = () => {
       router.back();
     };
 
     onMounted(() => {
-      fetchJob();
       fetchCategories();
+      fetchJob();
     });
 
-    return { form, updateJob, goBack, categories };
+    return { form, categories, isEditMode, handleSubmit, goBack };
   },
 };
 </script>
@@ -121,14 +148,24 @@ export default {
   background-color: #d1d5db;
 }
 
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
 .btn-success {
-  background-color: #10b981; /* green */
+  background-color: #10b981;
   color: white;
   border: none;
   transition: background-color 0.3s ease;
 }
 
 .btn-success:hover {
-  background-color: #059669; /* darker green on hover */
+  background-color: #059669;
 }
 </style>

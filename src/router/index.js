@@ -26,7 +26,7 @@ const router = createRouter({
             meta: { requiresAuth: true },
             children: [
                 {
-                    path: '',
+                    path: '/',
                     redirect: '/dashboard'
                 },
                 {
@@ -45,31 +45,31 @@ const router = createRouter({
                 
                 {
                     path: '/category',
-                    component: () => import('@/views/pages/Category.vue')
+                    component: () => import('@/views/pages/tables/Category.vue')
                 },
                 {
                     path: '/category/create',
                     name: 'CategoryCreate',
-                    component: () => import('@/views/pages/CategoryCreate.vue')
+                    component: () => import('@/views/pages/forms/CategoryForm.vue')
                 },
                 {
                     path: '/category/edit/:id',
                     name: 'CategoryEdit',
-                    component: () => import('@/views/pages/CategoryEdit.vue')
+                    component: () => import('@/views/pages/forms/CategoryForm.vue')
                 },
                 {
                     path: '/jobs',
-                    component: () => import('@/views/pages/Jobs.vue')
+                    component: () => import('@/views/pages/tables/Jobs.vue')
                 },
                 {
                     path: '/jobs/create',
                     name: 'JobsCreate',
-                    component: () => import('@/views/pages/JobsCreate.vue')
+                    component: () => import('@/views/pages/forms/JobForm.vue')
                 },
                 {
                     path: '/jobs/edit/:id',
                     name: 'JobsEdit',
-                    component: () => import('@/views/pages/JobsEdit.vue')
+                    component: () => import('@/views/pages/forms/JobForm.vue')
                 },
                 {
                     path: '/setting',
@@ -98,7 +98,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
     const auth = useAuthStore();
 
-    // ✅ Wait until Pinia hydration completes
+    
     while (auth.token === undefined) {
         await new Promise((resolve) => setTimeout(resolve, 10));
     }
