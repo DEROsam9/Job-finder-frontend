@@ -36,13 +36,14 @@ const router = createRouter({
                 },
                 {
                     path: '/customers',
-                    component: () => import('@/views/pages/Customer.vue')
+                    component: () => import('@/views/pages/tables/Customer.vue')
                 },
                 {
                     path: '/applications',
-                    component: () => import('@/views/pages/Application.vue')
+                    name: 'applications',
+                    component: () => import('@/views/pages/tables/Application.vue')
                 },
-                
+
                 {
                     path: '/category',
                     component: () => import('@/views/pages/Category.vue')
@@ -83,12 +84,17 @@ const router = createRouter({
                 {
                     path: '/applications/:id',
                     name: 'application.view',
-                    component: () => import('@/views/pages/ApplicationView.vue')
+                    component: () => import('@/views/pages/views/ApplicationView.vue')
                 },
                 {
                     path: '/applications/:id/edit',
                     name: 'application.edit',
-                    component: () => import('@/views/pages/ApplicationEdit.vue')
+                    component: () => import('@/views/pages/forms/ApplicationEdit.vue')
+                },
+                {
+                    path: '/payments',
+                    name: 'Payments',
+                    component: () => import('@/views/pages/tables/Payment.vue')
                 }
             ]
         }

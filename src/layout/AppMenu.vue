@@ -91,6 +91,21 @@ const model = ref([
         ]
     },
     {
+        label: 'Application Payments',
+        items: [
+            {
+                label: 'Payments',
+                icon: 'pi pi-money-bill', // Money bill icon for payments
+                to: '/payments'
+            }
+            // {
+            //     label: 'Payment Methods',
+            //     icon: 'pi pi-credit-card', // Credit card icon for payment methods
+            //     to: '/payment-methods'
+            // }
+        ]
+    },
+    {
         label: 'Settings',
         icon: 'pi pi-cog', // Settings gear
         items: [

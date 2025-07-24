@@ -48,25 +48,11 @@
                         </template>
                     </Column>
 
-                    <!-- Verified -->
-                    <Column header="Verified" style="min-width: 8rem">
-                        <template #body="{ data }">
-                            <i
-                                class="pi"
-                                :class="{
-                                    'pi-check-circle text-green-500': data.payments.length > 0,
-                                    'pi-times-circle text-red-500': data.payments.length === 0
-                                }"
-                            />
-                        </template>
-                    </Column>
-
                     <!-- Actions -->
-                    <Column header="Actions" style="min-width: 150px">
+                    <Column header="Actions" style="min-width: 100px">
                         <template #body="{ data }">
-                            <Button icon="pi pi-eye" class="mr-1" severity="info" rounded text @click="viewApplication(data)" />
-                            <Button icon="pi pi-pencil" class="mr-1" severity="warning" rounded text @click="editApplication(data)" />
-                            <Button icon="pi pi-trash" severity="danger" rounded text @click="confirmDelete(data)" />
+                            <Menu :model="getMenuItems(data)" popup :ref="(el) => el && menuRefs.set(data.id, el)" />
+                            <Button icon="pi pi-ellipsis-v" text @click="(event) => toggleMenu(event, data.id)" />
                         </template>
                     </Column>
                 </DataTable>
@@ -76,44 +62,30 @@
         </div>
     </div>
 </template>
+
 <script setup>
 import axiosClient from '@/axiosClient';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import Button from 'primevue/button';
+import ConfirmDialog from 'primevue/confirmdialog';
+import Menu from 'primevue/menu';
+import Tag from 'primevue/tag';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-const router = useRouter();
-const route = useRoute();
-const toast = useToast();
-const confirm = useConfirm();
-
-// Breadcrumb items
-const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' }
-];
-
-// Dynamic breadcrumb class based on route
-const breadcrumbClass = computed(() => {
-    const path = route.name || '';
-    switch (path) {
-        case 'application.view':
-            return 'bg-blue-100 border-l-4 border-blue-500';
-        case 'application.edit':
-            return 'bg-yellow-100 border-l-4 border-yellow-500';
-        case 'application.create':
-            return 'bg-green-100 border-l-4 border-green-500';
-        default:
-            return 'bg-gray-100 border-l-4 border-gray-400';
-    }
-});
-
-// Application list and loading state
+// Refs and state
+const menuRefs = new Map();
 const applications = ref([]);
 const loading = ref(true);
 
-// Fetch applications from API
+const toast = useToast();
+const confirm = useConfirm();
+const router = useRouter();
+const route = useRoute();
+
+// Fetch applications
 const fetchApplications = async () => {
     try {
         const response = await axiosClient.get('/v1/applications');
@@ -126,9 +98,10 @@ const fetchApplications = async () => {
         loading.value = false;
     }
 };
+
 onMounted(fetchApplications);
 
-// Date formatter
+// Format date
 const formatDate = (value) => {
     const date = new Date(value);
     return isNaN(date)
@@ -140,7 +113,7 @@ const formatDate = (value) => {
           });
 };
 
-// Tag color based on status
+// Status tag color
 const getSeverity = (status) => {
     switch ((status || '').toLowerCase()) {
         case 'active':
@@ -157,7 +130,34 @@ const getSeverity = (status) => {
     }
 };
 
-// Navigation actions
+// Menu toggle handler
+const toggleMenu = (event, id) => {
+    const menu = menuRefs.get(id);
+    if (menu) {
+        menu.toggle(event);
+    }
+};
+
+// Menu actions
+const getMenuItems = (data) => [
+    {
+        label: 'View',
+        icon: 'pi pi-eye',
+        command: () => viewApplication(data)
+    },
+    {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        command: () => editApplication(data)
+    },
+    {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => confirmDelete(data)
+    }
+];
+
+// Navigation handlers
 const viewApplication = (app) => {
     router.push({ name: 'application.view', params: { id: app.id } });
 };
@@ -166,7 +166,7 @@ const editApplication = (app) => {
     router.push({ name: 'application.edit', params: { id: app.id } });
 };
 
-// Delete with confirmation
+// Delete confirmation
 const confirmDelete = (app) => {
     confirm.require({
         message: `Are you sure you want to delete Application #${app.id}?`,
@@ -178,14 +178,39 @@ const confirmDelete = (app) => {
     });
 };
 
+// Delete logic
 const deleteApplication = async (id) => {
     try {
         await axiosClient.delete(`/v1/applications/${id}`);
         applications.value = applications.value.filter((a) => a.id !== id);
         toast.add({ severity: 'success', summary: 'Deleted', detail: 'Application deleted successfully', life: 3000 });
+        menuRefs.delete(id); // Clean up reference
     } catch (error) {
         console.error('Failed to delete application:', error);
         toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete application', life: 3000 });
     }
 };
+
+// Breadcrumb
+const breadcrumbItems = [
+    { label: 'Clients', to: '/customers' },
+    { label: 'Application', to: '/applications' },
+    { label: 'Categories', to: '/category' },
+    { label: 'Jobs', to: '/jobs' },
+    { label: 'Payments', to: '/payments' }
+];
+
+const breadcrumbClass = computed(() => {
+    const path = route.name || '';
+    switch (path) {
+        case 'application.view':
+            return 'bg-blue-100 border-l-4 border-blue-500';
+        case 'application.edit':
+            return 'bg-yellow-100 border-l-4 border-yellow-500';
+        case 'application.create':
+            return 'bg-green-100 border-l-4 border-green-500';
+        default:
+            return 'bg-gray-100 border-l-4 border-gray-400';
+    }
+});
 </script>
