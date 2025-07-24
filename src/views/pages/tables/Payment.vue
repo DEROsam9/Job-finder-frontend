@@ -41,7 +41,7 @@
             </Column>
         </DataTable>
 
-        <PaymentModal :show="showModal" :mode="modalMode" :payment="selectedPayment" @update:show="showModal = $event" @save="savePayment" />
+        <PaymentModal v-model:show="showModal" :mode="modalMode" :payment="selectedPayment" @save="handleSave" />
     </div>
 </template>
 <script setup>
@@ -81,12 +81,12 @@ const getActions = (payment) => [
     {
         label: 'Edit',
         icon: 'pi pi-pencil',
-        command: () => openModal(selectedRow.value)
+        command: () => openModal(payment)
     },
     {
         label: 'Delete',
         icon: 'pi pi-trash',
-        command: () => deletePayment(selectedRow.value.id)
+        command: () => deletePayment(payment.id)
     }
 ];
 
