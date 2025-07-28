@@ -3,9 +3,10 @@ import axios from '@/axiosClient'; // ✅ assuming it's saved as src/axiosClient
 // or simply 'axios' if you didn't customize it
 
 export default {
-    getAll(limit = 20) {
-        return axios.get(`/v1/payments?limit=${limit}`);
+    getAll(params = {}) {
+        return axios.get('/v1/payments', { params });
     },
+
     get(id) {
         return axios.get(`/v1/payments/${id}`);
     },

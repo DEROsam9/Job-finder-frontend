@@ -5,12 +5,18 @@
 
             <h2 class="text-2xl font-bold mb-4">Applications</h2>
 
+            <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="true" :statusOptions="statusOptions" />
+
             <div v-if="loading">
                 <p>Loading applications...</p>
             </div>
 
             <div v-else>
-                <DataTable :value="applications" scrollable scrollHeight="400px" dataKey="id" class="text-sm">
+                <DataTable :value="applications?.data || []" scrollable scrollHeight="400px" dataKey="id" class="text-sm">
+                    <ProgressSpinner v-if="loading" style="width: 50px; height: 50px" strokeWidth="8" class="mx-auto mb-4" />
+
+                    <div v-if="!loading && applications.length === 0" class="text-gray-500 italic mt-4">No applications found matching your filters.</div>
+
                     <!-- Full Name -->
                     <Column header="Name" style="min-width: 12rem">
                         <template #body="{ data }"> {{ data.client.first_name }} {{ data.client.middle_name }} {{ data.client.surname }} </template>
@@ -65,6 +71,7 @@
 
 <script setup>
 import axiosClient from '@/axiosClient';
+import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import Button from 'primevue/button';
 import ConfirmDialog from 'primevue/confirmdialog';
@@ -72,8 +79,27 @@ import Menu from 'primevue/menu';
 import Tag from 'primevue/tag';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+
+const filters = ref({
+    nameEmail: '',
+    passportId: '',
+    dateRange: null,
+    status: ''
+});
+
+watch(
+    () => filters.value.dateRange,
+    () => {
+        applyFilters();
+    },
+    { deep: true }
+);
+
+const applyFilters = () => {
+    fetchApplications();
+};
 
 // Refs and state
 const menuRefs = new Map();
@@ -85,15 +111,29 @@ const confirm = useConfirm();
 const router = useRouter();
 const route = useRoute();
 
+const formatDateForQuery = (date) => {
+    if (!date) return undefined;
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Returns 'YYYY-MM-DD'
+};
 // Fetch applications
 const fetchApplications = async () => {
+    loading.value = true;
     try {
-        const response = await axiosClient.get('/v1/applications');
-        applications.value = Array.isArray(response.data?.data?.data) ? response.data.data.data : [];
+        const response = await axiosClient.get('v1/applications', {
+            params: {
+                search: filters.value.nameEmail || undefined,
+                passport_id: filters.value.passportId || undefined,
+                status: filters.value.status || undefined,
+                from_date: formatDateForQuery(filters.value.dateRange?.[0]),
+                to_date: formatDateForQuery(filters.value.dateRange?.[1])
+            }
+        });
+
+        applications.value = response.data.data; // ✅ FIXED HERE
     } catch (error) {
-        console.error('Failed to fetch applications:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load applications', life: 3000 });
-        applications.value = [];
+        console.error('❌ Failed to fetch applications:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch applications', life: 3000 });
     } finally {
         loading.value = false;
     }
@@ -200,17 +240,19 @@ const breadcrumbItems = [
     { label: 'Payments', to: '/payments' }
 ];
 
-const breadcrumbClass = computed(() => {
-    const path = route.name || '';
-    switch (path) {
-        case 'application.view':
-            return 'bg-blue-100 border-l-4 border-blue-500';
-        case 'application.edit':
-            return 'bg-yellow-100 border-l-4 border-yellow-500';
-        case 'application.create':
-            return 'bg-green-100 border-l-4 border-green-500';
-        default:
-            return 'bg-gray-100 border-l-4 border-gray-400';
-    }
-});
+const statusOptions = [
+    { label: 'Draft', value: 'Draft' },
+    { label: 'Active', value: 'Active' },
+    { label: 'Open', value: 'Open' },
+    { label: 'Closed', value: 'Closed' },
+    { label: 'Under Review', value: 'Under Review' },
+    { label: 'Shortlisted', value: 'Shortlisted' },
+    { label: 'Interview Scheduled', value: 'Interview Scheduled' },
+    { label: 'Interviewed', value: 'Interviewed' },
+    { label: 'Offered', value: 'Offered' },
+    { label: 'Hired', value: 'Hired' },
+    { label: 'Rejected', value: 'Rejected' },
+    { label: 'Withdrawn', value: 'Withdrawn' },
+    { label: 'On Hold', value: 'On Hold' }
+];
 </script>

@@ -4,6 +4,8 @@
         <BreadCrumb :items="breadcrumbItems" />
         <h2 class="text-xl font-bold mb-4">Payments</h2>
 
+        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="true" :statusOptions="statusOptions" @input="applyFilters" />
+
         <Button label="Add Payment" icon="pi pi-plus" class="mb-3" @click="openModal()" />
 
         <DataTable :value="payments" :loading="loading" :paginator="true" :rows="10" scrollable scrollHeight="400px" tableStyle="min-width: 50rem" emptyMessage="No payments found">
@@ -41,7 +43,7 @@
             </Column>
         </DataTable>
 
-        <PaymentModal :show="showModal" :mode="modalMode" :payment="selectedPayment" @update:show="showModal = $event" @save="savePayment" />
+        <PaymentModal v-model:show="showModal" :mode="modalMode" :payment="selectedPayment" @save="savePayment" />
     </div>
 </template>
 <script setup>
@@ -52,6 +54,7 @@ import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import { onMounted, ref } from 'vue';
 
+import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import paymentService from '@/service/payment';
 import { useToast } from 'primevue/usetoast';
@@ -62,6 +65,47 @@ const toast = useToast();
 const selectedRow = ref(null);
 
 const menuRefs = ref(new Map());
+
+const filters = ref({
+    nameEmail: '',
+    passportId: '',
+    dateRange: null,
+    status: null
+});
+
+const statusOptions = [
+    { label: 'Active', value: 'Active' },
+    { label: 'Draft', value: 'Draft' },
+    { label: 'Rejected', value: 'Rejected' },
+    { label: 'Under Review', value: 'Under Review' },
+    { label: 'Interview Scheduled', value: 'Interview Scheduled' },
+    { label: 'Closed', value: 'Closed' },
+    { label: 'Offered', value: 'Offered' },
+    { label: 'Hired', value: 'Hired' },
+    { label: 'Withdrawn', value: 'Withdrawn' }
+];
+
+const applyFilters = async () => {
+    loading.value = true;
+
+    const params = {
+        name_email: filters.value.nameEmail || undefined,
+        passport_id: filters.value.passportId || undefined,
+        status: filters.value.status?.value || undefined,
+        date_from: filters.value.dateRange?.[0] || undefined,
+        date_to: filters.value.dateRange?.[1] || undefined,
+        limit: 10
+    };
+
+    try {
+        const response = await paymentService.getAll(params);
+        payments.value = response.data.data.data;
+    } catch (err) {
+        console.error('Error applying filters:', err);
+    } finally {
+        loading.value = false;
+    }
+};
 
 const toggleMenu = (event, id) => {
     const menu = menuRefs.value.get(id);
@@ -81,12 +125,12 @@ const getActions = (payment) => [
     {
         label: 'Edit',
         icon: 'pi pi-pencil',
-        command: () => openModal(selectedRow.value)
+        command: () => openModal(payment)
     },
     {
         label: 'Delete',
         icon: 'pi pi-trash',
-        command: () => deletePayment(selectedRow.value.id)
+        command: () => deletePayment(payment.id)
     }
 ];
 
@@ -145,7 +189,7 @@ const deletePayment = async (id) => {
     }
 };
 
-onMounted(fetchPayments);
+onMounted(applyFilters);
 
 const statusColors = {
     Active: 'bg-green-100 text-green-800',
@@ -156,6 +200,8 @@ const statusColors = {
     Closed: 'bg-purple-100 text-purple-800',
     Offered: 'bg-pink-100 text-pink-800',
     Hired: 'bg-green-200 text-green-900',
-    Withdrawn: 'bg-gray-200 text-gray-900'
+    Withdrawn: 'bg-gray-200 text-gray-900',
+    Pending: 'bg-orange-100 text-orange-800',
+    Failed: 'bg-red-200 text-red-900'
 };
 </script>

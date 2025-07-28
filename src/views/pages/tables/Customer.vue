@@ -6,7 +6,11 @@
 
             <h2 class="text-2xl font-bold mb-4">Clients</h2>
 
-            <Button label="Add Client" icon="pi pi-plus" class="mb-4" @click="openAdd" />
+            <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
+
+            <div class="flex justify-end mb-4">
+                <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
+            </div>
 
             <DataTable :value="clients" paginator :rows="10" dataKey="id" :loading="loading" scrollable scrollHeight="400px" class="text-sm" tableStyle="min-width: 50rem">
                 <template #empty> No clients found. </template>
@@ -35,6 +39,7 @@
 
 <script setup>
 import axiosClient from '@/axiosClient';
+import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
@@ -56,18 +61,34 @@ const clients = ref([]);
 const loading = ref(true);
 const actionMenus = ref({});
 
-const fetchClients = async () => {
+const filters = ref({
+    nameEmail: '',
+    passportId: '',
+    dateRange: null
+});
+
+const applyFilters = () => {
+    fetchClients();
+};
+
+async function fetchClients() {
     loading.value = true;
     try {
-        const response = await axiosClient.get('/v1/clients');
-        clients.value = Array.isArray(response.data?.data?.data) ? response.data.data.data : [];
-    } catch (error) {
-        console.error('❌ Failed to fetch clients:', error);
+        const params = {
+            name: filters.value.nameEmail || undefined,
+            passport_number: filters.value.passportId || undefined,
+            id_number: filters.value.passportId || undefined,
+            start_date: filters.value.dateRange?.[0]?.toISOString().split('T')[0],
+            end_date: filters.value.dateRange?.[1]?.toISOString().split('T')[0]
+        };
+        const resp = await axiosClient.get('/v1/clients', { params });
+        clients.value = Array.isArray(resp.data?.data?.data) ? resp.data.data.data : [];
+    } catch {
         clients.value = [];
     } finally {
         loading.value = false;
     }
-};
+}
 
 onMounted(fetchClients);
 

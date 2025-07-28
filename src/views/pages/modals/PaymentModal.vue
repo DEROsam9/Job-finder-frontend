@@ -1,5 +1,5 @@
 <template>
-    <Dialog :visible="show" modal header="Add Payment" :style="{ width: '500px' }" @update:visible="$emit('update:show', $event)">
+    <Dialog :visible="show" modal :header="mode === 'edit' ? 'Edit Payment' : 'Add Payment'" :style="{ width: '500px' }" @update:visible="$emit('update:show', $event)">
         <form @submit.prevent="submit">
             <div class="mb-4">
                 <label class="block mb-1">Client ID</label>
