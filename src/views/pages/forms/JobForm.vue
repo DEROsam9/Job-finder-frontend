@@ -1,6 +1,7 @@
 <template>
   <div class="card">
     <div class="p-6">
+            <BreadCrumb :items="breadcrumbItems" />
       <h2 class="text-xl font-semibold mb-4">{{ isEditMode ? 'Edit Job Title' : 'Create New Job Title' }}</h2>
 
       <form @submit.prevent="handleSubmit">
@@ -45,9 +46,13 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 
 export default {
   name: 'JobForm',
+  components: {
+    BreadCrumb
+  },
   setup() {
     const router = useRouter();
     const route = useRoute();
@@ -64,7 +69,9 @@ export default {
     });
 
     const categories = ref([]);
-
+    const breadcrumbItems = [
+    { label: 'Jobs', to: '/jobs' }
+];
     const fetchJob = () => {
       if (isEditMode.value) {
         axios.get(`http://localhost:8000/api/v1/careers/${jobId}`)
@@ -125,7 +132,7 @@ export default {
       fetchJob();
     });
 
-    return { form, categories, isEditMode, handleSubmit, goBack };
+    return { form, categories, isEditMode, handleSubmit, goBack, breadcrumbItems };
   },
 };
 </script>

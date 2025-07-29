@@ -46,14 +46,13 @@
     <tr
       v-for="job in jobs"
       :key="job.id"
-      class="hover:bg-gray-50"
     >
       <td class="py-2 px-4 border-b border-gray-300">{{ job.name }}</td>
       <td class="py-2 px-4 border-b border-gray-300">{{ job.job_category?.name || 'Unknown' }}</td>
       <td class="py-2 px-4 border-b border-gray-300">{{ job.slots }}</td>
       <td class="py-2 px-4 border-b border-gray-300">
         <i
-          class="pi pi-ellipsis-v cursor-pointer"
+          class="pi pi-ellipsis-v"
           style="font-size: 0.8rem"
           @click="toggleMenu($event, job)"
         ></i>
@@ -95,11 +94,7 @@ const op = ref(null)
 const currentJob = ref(null)
 
 const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' },
-    { label: 'Categories', to: '/category' },
-    { label: 'Jobs', to: '/jobs' },
-    { label: 'Payments', to: '/payments' }
+    { label: 'Jobs', to: '/jobs' }
 ];
 
 

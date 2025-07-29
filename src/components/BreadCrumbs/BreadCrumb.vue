@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-gray-800 border border-gray-700 rounded-md px-4 py-2 mb-4">
+    <div class="bg-white border-gray-700 rounded-md px-4 py-2 mb-4">
         <div class="flex items-center space-x-2 text-sm text-gray-300">
             <router-link to="/" class="flex items-center space-x-1 text-gray-400 hover:text-white">
                 <span class="material-icons text-base">home</span>

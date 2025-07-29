@@ -6,18 +6,12 @@ import RecentSalesWidget from '@/components/dashboard/RecentSalesWidget.vue';
 import RevenueStreamWidget from '@/components/dashboard/RevenueStreamWidget.vue';
 import StatsWidget from '@/components/dashboard/StatsWidget.vue';
 
-const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' },
-    { label: 'Categories', to: '/category' },
-    { label: 'Jobs', to: '/jobs' },
-    { label: 'Payments', to: '/payments' }
-];
+
 </script>
 
 <template>
     <div>
-        <BreadCrumb :items="breadcrumbItems" />
+        
 
         <div class="grid grid-cols-12 gap-8">
             <StatsWidget />
