@@ -1,7 +1,7 @@
 import { api, generateUrl } from '@/api';
 
 export const fetchApplications = async (filter) => {
-    const url = generateUrl('job-categories', filter);
+    const url = generateUrl('job-categories?', filter);
 
     return await api
         .get(url)

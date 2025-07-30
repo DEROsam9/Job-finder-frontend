@@ -1,7 +1,7 @@
 import { api, generateUrl } from "@/api"
 
 export const fetchApplications = async (filter) => {
-    const url = generateUrl('applications', filter)
+    const url = generateUrl('applications?', filter)
 
     return await api
         .get(url)

@@ -42,6 +42,7 @@ declare module 'vue' {
     SelectButton: typeof import('primevue/selectbutton')['default']
     Skeleton: typeof import('primevue/skeleton')['default']
     StatsWidget: typeof import('./src/components/dashboard/StatsWidget.vue')['default']
+    Tag: typeof import('primevue/tag')['default']
     Toast: typeof import('primevue/toast')['default']
     TopbarWidget: typeof import('./src/components/landing/TopbarWidget.vue')['default']
   }
