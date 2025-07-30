@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="card">
         <Toast />
         <BreadCrumb :items="breadcrumbItems" />
         <h2 class="text-xl font-bold mb-4">Payments</h2>
@@ -113,11 +113,8 @@ const toggleMenu = (event, id) => {
         menu.toggle(event);
     }
 };
+
 const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' },
-    { label: 'Categories', to: '/category' },
-    { label: 'Jobs', to: '/jobs' },
     { label: 'Payments', to: '/payments' }
 ];
 

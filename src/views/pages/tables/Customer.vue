@@ -50,11 +50,7 @@ const editClient = ref(null);
 const confirm = useConfirm();
 
 const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' },
-    { label: 'Categories', to: '/category' },
-    { label: 'Jobs', to: '/jobs' },
-    { label: 'Payments', to: '/payments' }
+    { label: 'Clients', to: '/customers' }
 ];
 
 const clients = ref([]);

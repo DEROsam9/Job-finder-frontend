@@ -1,6 +1,7 @@
 <template>
   <div class="card">
     <div class="p-6">
+      <BreadCrumb :items="breadcrumbItems" />
       <h2 class="text-xl font-semibold mb-4">{{ isEditMode ? 'Edit Category' : 'Create New Category' }}</h2>
 
       <form @submit.prevent="handleSubmit">
@@ -28,6 +29,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axiosClient from '@/axiosClient';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 
 export default {
   name: 'CategoryForm',
@@ -42,6 +44,10 @@ export default {
       name: '',
       description: '',
     });
+
+    const breadcrumbItems = [
+      { label: 'Categories', to: '/category' }
+    ];
 
     const fetchCategory = () => {
       if (isEditMode.value) {
@@ -91,7 +97,7 @@ export default {
       fetchCategory();
     });
 
-    return { form, isEditMode, handleSubmit, goBack };
+    return { form, isEditMode, handleSubmit, goBack, breadcrumbItems };
   },
 };
 </script>

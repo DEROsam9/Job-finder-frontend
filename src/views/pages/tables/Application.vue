@@ -7,7 +7,7 @@ import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { fetchApplications, removeApplication } from '@/api/applications';
-import {formatDate, getSeverity} from '@/utils/index';
+import { formatDate, getSeverity } from '@/utils/index';
 
 const confirm = useConfirm();
 const toast = useToast();

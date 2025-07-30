@@ -18,13 +18,13 @@
         <tr
           v-for="(category, index) in categories"
           :key="category?.id || index"
-          class="hover:bg-gray-50"
+          
         >
           <td class="py-2 px-4 border-b border-gray-300">{{ category.name }}</td>
           <td class="py-2 px-4 border-b border-gray-300">{{ category.description }}</td>
           <td class="py-2 px-4 border-b border-gray-300">
             <i
-              class="pi pi-ellipsis-v cursor-pointer"
+              class="pi pi-ellipsis-v"
               style="font-size: 0.8rem"
               @click="toggleMenu($event, category)"
             ></i>
@@ -78,11 +78,8 @@ const currentCategory = ref(null)
 
 
 const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' },
-    { label: 'Application', to: '/applications' },
     { label: 'Categories', to: '/category' },
-    { label: 'Jobs', to: '/jobs' },
-    { label: 'Payments', to: '/payments' }
+    
 ];
 
 const categoryStore = useCategoryStore()
