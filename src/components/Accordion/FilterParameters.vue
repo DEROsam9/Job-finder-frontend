@@ -1,74 +1,162 @@
-<!-- src/components/FilterAccordion.vue -->
+
+<script setup>
+import { reactive } from 'vue';
+
+const props = defineProps({
+    showNameEmail: Boolean,
+    showPassportId: Boolean,
+    showApplication: Boolean,
+    showDate: Boolean,
+    showStatus: Boolean,
+    status: Array
+});
+
+const emit = defineEmits(['applyFilters']);
+
+const localFilters = reactive({
+    email: '',
+    passport_or_id: '',
+    application_code: '',
+    name: '',
+    dateRange: '',
+    status_id: 0
+});
+
+const emailOrNameFilter = () => {
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc',
+        name: localFilters.name,
+    }
+    emit('applyFilters', params)
+}
+
+const statusFilter = () => {
+
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc',
+        status_id: localFilters.status_id
+    }
+    emit('applyFilters', params)
+}
+
+const applicationCodeFilter = () => {
+
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc',
+        search:  localFilters.application_code,
+        searchFields: `application_code`,
+    }
+    emit('applyFilters', params)
+}
+
+function dateRangeFilter(dates) {
+    if (!dates || dates.length < 2) {
+        return;
+    }
+
+    const from = dates[0];
+    const to = dates[1];
+
+    const formatDate = (date) => {
+        if (!date) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const fromDate = formatDate(from);
+    const toDate = formatDate(to);
+
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc',
+        from: fromDate,
+        to: toDate
+    }
+    emit('applyFilters', params)
+}
+
+const passportFilter = () => {
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc',
+        passport_or_id: localFilters.passport_or_id,
+    }
+    emit('applyFilters', params)
+}
+</script>
 <template>
-    <Accordion multiple class="mb-4">
+    <Accordion multiple class="mb-8">
         <AccordionPanel>
             <AccordionHeader>🔍 Filter</AccordionHeader>
             <AccordionContent>
                 <div class="flex flex-wrap gap-4 items-end">
                     <!-- Name or Email -->
-                    <div v-if="showNameEmail" class="flex-1 min-w-[200px]">
-                        <InputText v-model="localFilters.nameEmail" placeholder="Name or Email" class="w-full" @input="emitFilters" />
+                    <div v-if="showNameEmail" class="flex-1 min-w-[600px]">
+                        <InputText
+                            v-model="localFilters.name"
+                            placeholder="Name Or Email Or Phone Number"
+                            size="large"
+                            class="w-full"
+                            @input="emailOrNameFilter"
+                        />
                     </div>
 
-                    <!-- Passport or ID -->
-                    <div v-if="showPassportId" class="flex-1 min-w-[200px]">
-                        <InputText v-model="localFilters.passportId" placeholder="Passport or ID" class="w-full" @input="emitFilters" />
+                    <div v-if="showPassportId" class="flex-1 min-w-[600px]">
+                        <InputText
+                            v-model="localFilters.passport_or_id"
+                            placeholder="Passport or ID Number"
+                            size="large"
+                            class="w-full"
+                            @input="passportFilter"
+                        />
                     </div>
 
-                    <!-- Date Range -->
-                    <div v-if="showDate" class="flex-1 min-w-[240px]">
-                        <DatePicker v-model="localFilters.dateRange" selectionMode="range" showIcon inputClass="w-full" :manualInput="true" @change="emitFilters" @input="emitFilters" />
+                    <div v-if="showApplication" class="flex-1 min-w-[600px]">
+                        <InputText
+                            v-model="localFilters.application_code"
+                            placeholder="Application Code"
+                            size="large"
+                            class="w-full"
+                            @input="applicationCodeFilter"
+                        />
                     </div>
 
-                    <!-- Status -->
-                    <div v-if="showStatus" class="flex-1 min-w-[200px]">
-                        <Select v-model="localFilters.status" :options="statusOptions" optionLabel="label" placeholder="Select Status" class="w-full" @change="emitFilters" />
+                    <div v-if="showDate" class="flex-1 min-w-[600px]">
+                        <DatePicker
+                            v-model="localFilters.dateRange"
+                            selectionMode="range"
+                            size="large"
+                            class="w-full"
+                            inputClass="w-full"
+                            placeholder="Pick Date Range"
+                            :manualInput="true"
+                            @update:modelValue="dateRangeFilter"
+                        />
+                    </div>
+
+                    <div v-if="showStatus" class="flex-1 min-w-[600px]">
+                        <Select
+                            v-model="localFilters.status_id"
+                            :options="status"
+                            optionLabel="name"
+                            optionValue="id"
+                            placeholder="Select Status"
+                            class="w-full"
+                            @change="statusFilter"
+                        />
                     </div>
                 </div>
             </AccordionContent>
         </AccordionPanel>
     </Accordion>
 </template>
-
-<script setup>
-import { reactive, watch } from 'vue';
-// Import Select instead of Dropdown
-
-const props = defineProps({
-    modelValue: Object, // two-way bound filter values
-    showNameEmail: Boolean,
-    showPassportId: Boolean,
-    showDate: Boolean,
-    showStatus: Boolean,
-    statusOptions: Array // optional for dropdowns
-});
-
-const emit = defineEmits(['update:modelValue', 'input']); // ✅ Add 'input' here
-
-const localFilters = reactive({ ...props.modelValue });
-
-// Emit when any input changes
-function emitFilters() {
-    emit('update:modelValue', { ...localFilters });
-    emit('input'); // ✅ This triggers applyFilters() in parent
-}
-
-// Keep local sync with prop updates
-watch(
-    () => props.modelValue,
-    (newVal) => {
-        for (const key in newVal) {
-            localFilters[key] = newVal[key];
-        }
-    },
-    { deep: true }
-);
-// Watch specifically for changes in dateRange
-watch(
-    () => localFilters.dateRange,
-    () => {
-        emitFilters();
-    },
-    { deep: true }
-);
-</script>

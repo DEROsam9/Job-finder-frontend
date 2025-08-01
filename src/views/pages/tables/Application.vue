@@ -7,6 +7,7 @@ import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { fetchApplications, removeApplication } from '@/api/applications';
+import { fetchStatuses } from '@/api/common';
 import { formatDate, getSeverity } from '@/utils/index';
 
 const confirm = useConfirm();
@@ -14,6 +15,8 @@ const toast = useToast();
 const router = useRouter();
 const loading = ref(false);
 const selectedId = ref(0);
+const applications = ref([]);
+const status = ref([]);
 
 onMounted(() => {
     const params = {
@@ -22,13 +25,12 @@ onMounted(() => {
         sortedBy: 'desc'
     };
     fetchData(params);
+
+    fetchStatusData(params);
 });
 
-const applications = ref([]);
-const filters = ref('');
-
-const applyFilters = () => {
-    // fetchClients();
+const applyFilters = params => {
+    fetchData(params);
 };
 
 const pagination = reactive({
@@ -99,15 +101,9 @@ const deleteApplication = (id) => {
 
 const fetchData = async (params) => {
     try {
-
         loading.value = true;
         const response = await fetchApplications(params);
-
-        console.log(response)
-
         applications.value = response.data.data.data;
-
-        console.log(response.data.data.per_page)
 
         if (response.data.data.per_page && response.data.data.total && response.data.data.current_page) {
             pagination.per_page = response.data.data.per_page ?? 0;
@@ -118,6 +114,22 @@ const fetchData = async (params) => {
         } else {
             pagination.total_pages = 0;
         }
+    } catch (e) {
+        console.log(e);
+        loading.value = false;
+    } finally {
+        loading.value = false;
+    }
+};
+
+const fetchStatusData = async (params) => {
+    try {
+
+        loading.value = true;
+        const response = await fetchStatuses(params);
+
+        status.value = response.data;
+
     } catch (e) {
         console.log(e);
         loading.value = false;
@@ -139,7 +151,15 @@ const fetchData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
+                        <FilterAccordion
+                            :status="status"
+                            :showNameEmail="true"
+                            :showPassportId="true"
+                            :showDate="true"
+                            :showStatus="true"
+                            :showApplication="true"
+                            @applyFilters="applyFilters"
+                        />
                     </div>
                 </div>
             </div>

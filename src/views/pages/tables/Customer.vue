@@ -28,12 +28,7 @@ const pagination = reactive({
     per_page: 10
 });
 
-const applyFilters = () => {
-    const params = {
-        page: pagination.current_page,
-        orderBy: 'created_at',
-        sortedBy: 'desc'
-    };
+const applyFilters = params => {
     fetchData(params);
 };
 
@@ -63,15 +58,16 @@ const fetchData = async (params) => {
 
         const response = await fetchClients(params);
 
-        clients.value = response.data.data || [];
-
-        console.log(clients.value);
+        clients.value = response.data.data.data || [];
 
         // Update pagination
-        pagination.current_page = response.data.current_page;
-        pagination.total = response.data.total;
-        pagination.per_page = response.data.per_page;
-        pagination.total_pages = response.data.last_page;
+        pagination.current_page = response.data.data.current_page;
+        pagination.total = response.data.data.total;
+        pagination.per_page = response.data.data.per_page;
+        pagination.total_pages = response.data.data.last_page;
+
+        console.log(pagination)
+
     } catch (error) {
         console.error('Error fetching clients:', error);
         toast.add({
@@ -157,7 +153,14 @@ onMounted(() => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
+                        <FilterAccordion
+                            v-model="filters"
+                            :showNameEmail="true"
+                            :showPassportId="true"
+                            :showDate="false"
+                            :showStatus="false"
+                            @applyFilters="applyFilters"
+                        />
                     </div>
                     <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
                 </div>
