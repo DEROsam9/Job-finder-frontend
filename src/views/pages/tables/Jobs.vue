@@ -1,19 +1,58 @@
 <script setup>
-import { onMounted, ref, reactive } from 'vue';
-import { useRouter } from 'vue-router';
-import Menu from 'primevue/menu';
-import {fetchAllJobs, removeJob} from '@/api/jobs';
-import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import { fetchAllJobs, removeJob } from '@/api/jobs';
+import axiosClient from '@/axiosClient';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import Menu from 'primevue/menu';
 import { useConfirm } from 'primevue/useconfirm';
-import { useToast } from "primevue/usetoast";
+import { useToast } from 'primevue/usetoast';
+import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 const confirm = useConfirm();
 const toast = useToast();
 const router = useRouter();
-const loading = ref(false)
-const selectedId = ref(0)
+const loading = ref(false);
+const selectedId = ref(0);
+const statuses = ref([]);
 
+const fetchStatuses = async () => {
+    try {
+        const response = await axiosClient.get('/v1/statuses');
+        statuses.value = response.data;
+    } catch (error) {
+        console.error('Error fetching statuses:', error);
+    }
+};
+
+// const getStatusSeverity = (statusName) => {
+//     if (!statusName) return 'info';
+
+//     const status = statuses.value.find((s) => s.name === statusName);
+//     return status?.severity || 'info';
+// };
+
+const getStatusSeverity = (statusName) => {
+    if (!statusName) return 'info';
+
+    const severityMap = {
+        DRAFT: 'secondary',
+        ACTIVE: 'success',
+        OPEN: 'secondary',
+        CLOSED: 'danger',
+        'UNDER REVIEW': 'info',
+        SHORTLISTED: 'warning',
+        'INTERVIEW SCHEDULED': 'warning',
+        INTERVIEWED: 'info',
+        OFFERED: 'success',
+        HIRED: 'success',
+        REJECTED: 'danger',
+        WITHDRAWN: 'danger',
+        'ON HOLD': 'secondary'
+    };
+
+    return severityMap[statusName.toUpperCase()] || 'info';
+};
 
 onMounted(() => {
     const params = {
@@ -22,13 +61,14 @@ onMounted(() => {
         sortedBy: 'desc'
     };
     fetchData(params);
+    fetchStatuses();
 });
 
 const jobs = ref([]);
 const filters = ref('');
 
-const applyFilters = () => {
-    // fetchClients();
+const applyFilters = (params) => {
+    fetchData(params);
 };
 
 const pagination = reactive({
@@ -53,7 +93,7 @@ const editButton = (id) => {
     router.push(`/jobs/edit/${id}`);
 };
 const deleteJob = (id) => {
-    selectedId.value = id
+    selectedId.value = id;
     confirm.require({
         message: 'Do you want to delete this record?',
         header: 'Delete Job',
@@ -93,10 +133,9 @@ const deleteJob = (id) => {
     });
 };
 
-
 const fetchData = async (params) => {
     try {
-        loading.value = true
+        loading.value = true;
         const response = await fetchAllJobs(params);
 
         jobs.value = response.data.data;
@@ -112,9 +151,9 @@ const fetchData = async (params) => {
         }
     } catch (e) {
         console.log(e);
-        loading.value = false
+        loading.value = false;
     } finally {
-        loading.value = false
+        loading.value = false;
     }
 };
 </script>
@@ -131,7 +170,7 @@ const fetchData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
+                        <FilterAccordion :showNameEmail="true" :showPassportId="false" :showDate="true" :showStatus="true" :showApplication="false" :showJobCategory="false" :showJobTitle="true" :status="statuses" @applyFilters="applyFilters" />
                     </div>
                     <div>
                         <Button v-slot="slotProps" asChild class="p-button-success">
@@ -157,8 +196,10 @@ const fetchData = async (params) => {
                 stripedRows
                 tableStyle="min-width: 50rem"
             >
+                <template #empty> No Jobs found matching the filter. </template>
+                <template #loading> Loading client data. Please wait... </template>
 
-            <Column header="Actions" style="width: 3rem">
+                <Column header="Actions" style="width: 3rem">
                     <template #body="slotProps">
                         <div class="relative">
                             <Button :aria-controls="`menu_${slotProps.data.id}`" aria-haspopup="true" class="p-button-text" icon="pi pi-ellipsis-v" @click="$refs[`menu_${slotProps.data.id}`].toggle($event)" />
@@ -202,6 +243,11 @@ const fetchData = async (params) => {
                         </div>
                     </template>
                 </Column>
+                <Column header="Status" :sortable="true">
+                    <template #body="slotProps">
+                        <Tag :value="slotProps.data.status?.name" :severity="getStatusSeverity(slotProps.data.status?.name)" />
+                    </template>
+                </Column>
                 <Column :sortable="true" field="slots" header="Slots"></Column>
                 <Column :sortable="true" field="created_at" header="Created Date"></Column>
             </DataTable>
@@ -216,5 +262,4 @@ const fetchData = async (params) => {
     background: white;
     z-index: 1;
 }
-
 </style>
