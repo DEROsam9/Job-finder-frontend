@@ -1,7 +1,7 @@
 <script setup>
 import { fetchClients, removeClient } from '@/api/clients';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
-import { formatDate } from '@/utils/index';
+import { formatDate } from '@/utils';
 import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';

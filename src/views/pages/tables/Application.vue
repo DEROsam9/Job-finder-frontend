@@ -2,18 +2,25 @@
 import { fetchApplications, removeApplication } from '@/api/applications';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
-import { formatDate, getSeverity } from '@/utils/index';
+import { formatDate, getSeverity } from '@/utils';
 import Menu from 'primevue/menu';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import {downloadApplicationsExcel} from "@/api/downloads";
 
 const confirm = useConfirm();
 const toast = useToast();
 const router = useRouter();
 const loading = ref(false);
+const isLoading = ref(false);
 const selectedId = ref(0);
+const filter_params = ref({
+    page: 1,
+    orderBy: 'created_at',
+    sortedBy: 'desc'
+});
 
 onMounted(() => {
     const params = {
@@ -28,6 +35,7 @@ const applications = ref([]);
 const filters = ref('');
 
 const applyFilters = (params) => {
+    filter_params.value = params
     fetchData(params);
 };
 const pagination = reactive({
@@ -45,6 +53,7 @@ const onPageChange = (event) => {
         orderBy: 'created_at',
         sortedBy: 'desc'
     };
+    filter_params.value = params
     fetchData(params);
 };
 
@@ -96,16 +105,42 @@ const deleteApplication = (id) => {
     });
 };
 
+async function downloadExcel() {
+    try {
+        await downloadApplicationsExcel(filter_params.value)
+            .then((Response) => {
+                let fileURL = window.URL.createObjectURL(
+                    new Blob([Response], {
+                        type: "application/vnd.ms-excel",
+                    })
+                );
+                let fileLink = document.createElement("a");
+
+                fileLink.href = fileURL;
+                fileLink.setAttribute(
+                    "download",
+                    "application_report_" + Math.round(+new Date() / 1000) + ".xlsx"
+                );
+                document.body.appendChild(fileLink);
+
+                fileLink.click();
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    } catch (error) {
+        console.log(error);
+    } finally {
+        isLoading.value = false;
+    }
+}
+
 const fetchData = async (params) => {
     try {
         loading.value = true;
         const response = await fetchApplications(params);
 
-        console.log(response);
-
         applications.value = response.data.data.data;
-
-        console.log(response.data.data.per_page);
 
         if (response.data.data.per_page && response.data.data.total && response.data.data.current_page) {
             pagination.per_page = response.data.data.per_page ?? 0;
@@ -137,8 +172,22 @@ const fetchData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="true" @applyFilters="applyFilters" />
+                        <FilterAccordion
+                            v-model="filters"
+                            :showNameEmail="false"
+                            :showPassportId="false"
+                            :showDate="true"
+                            :showApplication="true"
+                            :showStatus="true"
+                            @applyFilters="applyFilters"
+                        />
                     </div>
+                    <Button
+                        label="Download Excel"
+                        severity="info"
+                        icon="pi pi-download"
+                        @click="downloadExcel"
+                    />
                 </div>
             </div>
         </template>

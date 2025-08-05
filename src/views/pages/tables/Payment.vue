@@ -254,9 +254,9 @@ const fetchStatusData = async (params) => {
                 </Column>
 
                 <Column field="transaction_reference" header="Reference"></Column>
-                <Column field="transaction_date" header="Date">
+                <Column field="created_at" header="Date">
                     <template #body="slotProps">
-                        {{ slotProps.data.transaction_date ? new Date(slotProps.data.transaction_date).toLocaleString() : '-' }}
+                        {{ slotProps.data.created_at ? new Date(slotProps.data.created_at).toLocaleString() : '-' }}
                     </template>
                 </Column>
             </DataTable>
