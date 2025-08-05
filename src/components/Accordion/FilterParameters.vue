@@ -2,7 +2,7 @@
 <script setup>
 import { reactive } from 'vue';
 
-const props = defineProps({
+defineProps({
     showNameEmail: Boolean,
     showPassportId: Boolean,
     showApplication: Boolean,
