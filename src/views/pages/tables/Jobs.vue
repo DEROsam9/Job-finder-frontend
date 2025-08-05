@@ -170,7 +170,7 @@ const fetchData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion :showNameEmail="true" :showPassportId="false" :showDate="true" :showStatus="true" :showApplication="false" :showJobCategory="false" :showJobTitle="true" :status="statuses" @applyFilters="applyFilters" />
+                        <FilterAccordion :showNameEmail="false" :showPassportId="false" :showDate="true" :showStatus="true" :showApplication="false" :showJobCategory="false" :showJobTitle="true" :status="statuses" @applyFilters="applyFilters" />
                     </div>
                     <div>
                         <Button v-slot="slotProps" asChild class="p-button-success">

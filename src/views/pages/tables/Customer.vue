@@ -28,7 +28,7 @@ const pagination = reactive({
     per_page: 10
 });
 
-const applyFilters = params => {
+const applyFilters = (params) => {
     fetchData(params);
 };
 
@@ -66,8 +66,7 @@ const fetchData = async (params) => {
         pagination.per_page = response.data.data.per_page;
         pagination.total_pages = response.data.data.last_page;
 
-        console.log(pagination)
-
+        console.log(pagination);
     } catch (error) {
         console.error('Error fetching clients:', error);
         toast.add({
@@ -153,14 +152,7 @@ onMounted(() => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion
-                            v-model="filters"
-                            :showNameEmail="true"
-                            :showPassportId="true"
-                            :showDate="false"
-                            :showStatus="false"
-                            @applyFilters="applyFilters"
-                        />
+                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="false" @applyFilters="applyFilters" />
                     </div>
                     <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
                 </div>

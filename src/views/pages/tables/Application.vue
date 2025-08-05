@@ -1,5 +1,6 @@
 <script setup>
 import { fetchApplications, removeApplication } from '@/api/applications';
+import axiosClient from '@/axiosClient';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import { formatDate, getSeverity } from '@/utils/index';
@@ -14,8 +15,10 @@ const toast = useToast();
 const router = useRouter();
 const loading = ref(false);
 const selectedId = ref(0);
+const statuses = ref([]);
 
-onMounted(() => {
+onMounted(async () => {
+    await fetchStatuses();
     const params = {
         page: 1,
         orderBy: 'created_at',
@@ -29,6 +32,15 @@ const filters = ref('');
 
 const applyFilters = (params) => {
     fetchData(params);
+};
+
+const fetchStatuses = async () => {
+    try {
+        const response = await axiosClient.get('/v1/statuses');
+        statuses.value = response.data;
+    } catch (error) {
+        console.error('Error fetching statuses:', error);
+    }
 };
 const pagination = reactive({
     current_page: '',
@@ -137,7 +149,7 @@ const fetchData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="true" @applyFilters="applyFilters" />
+                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="true" :status="statuses" @applyFilters="applyFilters" />
                     </div>
                 </div>
             </div>
@@ -158,6 +170,8 @@ const fetchData = async (params) => {
                 stripedRows
                 tableStyle="min-width: 50rem"
             >
+                <template #empty> No JobsApplication found matching the filter. </template>
+                <template #loading> Loading client data. Please wait... </template>
                 <Column header="Actions" style="width: 3rem">
                     <template #body="slotProps">
                         <div class="relative">
