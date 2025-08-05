@@ -1,154 +1,220 @@
-<template>
-  <div class="card">
-    <div >
-      <BreadCrumb :items="breadcrumbItems" />
-      <h2 class="text-xl font-bold">Job Titles</h2>
-      <div class="flex justify-end mb-4">
-         <button @click="goToCreatePage" class="bg-green-200 hover:bg-green-300 text-green-900 font-semibold py-2 px-4 rounded">Add Job</button>
-
-      </div>
-
-      <!-- <table class="min-w-full border border-gray-200 rounded">
-        <thead>
-          <tr class="bg-gray-100 text-left">
-            <th>Title</th>
-            <th>Category</th>
-            <th>Slots</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="job in jobs" :key="job.id">
-            <td>{{ job.name }}</td>
-            <td>{{ job.job_category?.name || 'Unknown' }}</td>
-            <td>{{ job.slots }}</td>
-            <td>
-              <i class="pi pi-ellipsis-v cursor-pointer"
-                 @click="toggleMenu($event, job)">
-              </i>
-            </td>
-          </tr>
-          <tr v-if="jobs.length === 0">
-            <td colspan="4" class="text-center py-4">No Job Titles found.</td>
-          </tr>
-        </tbody>
-      </table> -->
-      <table class="min-w-full rounded border-0">
-  <thead>
-    <tr class="bg-gray-100 text-left">
-      <th class="py-2 px-4 border-b border-gray-300">Title</th>
-      <th class="py-2 px-4 border-b border-gray-300">Category</th>
-      <th class="py-2 px-4 border-b border-gray-300">Slots</th>
-      <th class="py-2 px-4 border-b border-gray-300">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr
-      v-for="job in jobs"
-      :key="job.id"
-    >
-      <td class="py-2 px-4 border-b border-gray-300">{{ job.name }}</td>
-      <td class="py-2 px-4 border-b border-gray-300">{{ job.job_category?.name || 'Unknown' }}</td>
-      <td class="py-2 px-4 border-b border-gray-300">{{ job.slots }}</td>
-      <td class="py-2 px-4 border-b border-gray-300">
-        <i
-          class="pi pi-ellipsis-v"
-          style="font-size: 0.8rem"
-          @click="toggleMenu($event, job)"
-        ></i>
-      </td>
-    </tr>
-
-    <tr v-if="jobs.length === 0">
-      <td colspan="4" class="text-center py-4">No Job Titles found.</td>
-    </tr>
-  </tbody>
-</table>
-
-
-      <OverlayPanel ref="op">
-        <Menu :model="menuItems" />
-      </OverlayPanel>
-
-      <CustomPagination
-        :totalRecords="totalJobs"
-        :rowsPerPage="rowsPerPage"
-        :currentPage="currentPage"
-        @update:currentPage="onPageChange"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import OverlayPanel from 'primevue/overlaypanel'
-import Menu from 'primevue/menu'
-import CustomPagination from '@/components/CustomPagination.vue'
-import { useJobStore } from '@/stores/jobStore'
-import axios from 'axios'
+import { onMounted, ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import Menu from 'primevue/menu';
+import {fetchAllJobs, removeJob} from '@/api/jobs';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from "primevue/usetoast";
 
-const router = useRouter()
-const op = ref(null)
-const currentJob = ref(null)
+const confirm = useConfirm();
+const toast = useToast();
+const router = useRouter();
+const loading = ref(false)
+const selectedId = ref(0)
 
-const breadcrumbItems = [
-    { label: 'Jobs', to: '/jobs' }
-];
-
-
-const jobStore = useJobStore()
-
-const {
-  jobs,
-  categories,
-  totalJobs,
-  currentPage,
-  rowsPerPage,
-  fetchJobs,
-  fetchCategories
-} = jobStore
-
-const goToCreatePage = () => router.push({ name: 'JobsCreate' })
-
-const openEditModal = () => {
-  if (currentJob.value) {
-    router.push({ name: 'JobsEdit', params: { id: currentJob.value.id } })
-  }
-}
-
-const deleteJob = () => {
-  if (currentJob.value && confirm('Are you sure you want to delete this job?')) {
-    axios
-    // .delete(http://localhost:8000/api/v1/careers/${currentJob.value.id})
-      .delete(`http://localhost:8000/api/v1/careers/${currentJob.value.id}`)
-      .then(() => fetchJobs(currentPage.value))
-      .catch(error => console.error('Error deleting job:', error))
-  }
-}
-
-const toggleMenu = (event, job) => {
-  currentJob.value = job
-  op.value.toggle(event)
-}
-
-const menuItems = ref([
-  {
-    label: 'Actions',
-    items: [
-      { label: 'Edit', icon: 'pi pi-pencil', command: openEditModal },
-      { label: 'Delete', icon: 'pi pi-trash', command: deleteJob }
-    ]
-  }
-])
-
-const onPageChange = (page) => {
-  fetchJobs(page)
-}
 
 onMounted(() => {
-  fetchJobs(1)
-  fetchCategories()
-})
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    fetchData(params);
+});
+
+const jobs = ref([]);
+const filters = ref('');
+
+const applyFilters = () => {
+    // fetchClients();
+};
+
+const pagination = reactive({
+    current_page: '',
+    total_pages: '',
+    total: '',
+    per_page: ''
+});
+
+const onPageChange = (event) => {
+    pagination.current_page = Math.floor(event.first / event.rows) + 1;
+    pagination.per_page = event.rows;
+    const params = {
+        page: event.rows,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    fetchData(params);
+};
+
+const editButton = (id) => {
+    router.push(`/jobs/edit/${id}`);
+};
+const deleteJob = (id) => {
+    selectedId.value = id
+    confirm.require({
+        message: 'Do you want to delete this record?',
+        header: 'Delete Job',
+        icon: 'pi pi-info-circle',
+        rejectLabel: 'Cancel',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Delete',
+            severity: 'danger'
+        },
+        accept: async () => {
+            try {
+                const response = await removeJob(selectedId.value);
+                if (response.success) {
+                    toast.add({ severity: 'success', summary: 'Deleted', detail: 'Record deleted successfully', life: 3000 });
+                    console.log('Customer refresh triggered!');
+                    const params = {
+                        orderBy: 'created_at',
+                        sortedBy: 'desc'
+                    };
+                    fetchData(params);
+                } else {
+                    toast.add({ severity: 'warn', summary: 'Failed', detail: 'Could not delete record', life: 3000 });
+                }
+            } catch (error) {
+                toast.add({ severity: 'error', summary: 'Error', detail: 'An error occurred while deleting', life: 3000 });
+                console.error(error);
+            }
+        },
+        reject: () => {
+            toast.add({ severity: 'info', summary: 'Cancelled', detail: 'Deletion cancelled', life: 3000 });
+        }
+    });
+};
+
+
+const fetchData = async (params) => {
+    try {
+        loading.value = true
+        const response = await fetchAllJobs(params);
+
+        jobs.value = response.data.data;
+
+        if (response.data.per_page && response.data.total && response.data.current_page) {
+            pagination.per_page = response.data.per_page ?? 0;
+            pagination.total = response.data.total ?? 0;
+            pagination.current_page = response.data.current_page;
+
+            pagination.total_pages = pagination.per_page > 0 && pagination.total > 0 ? Math.ceil(pagination.total / pagination.per_page) : 0;
+        } else {
+            pagination.total_pages = 0;
+        }
+    } catch (e) {
+        console.log(e);
+        loading.value = false
+    } finally {
+        loading.value = false
+    }
+};
 </script>
+
+<template>
+    <BreadCrumb :items="breadcrumbItems" />
+    <Card>
+        <template #title>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <div class="font-bold text-lg">Jobs</div>
+                    <div class="text-sm">List of all jobs</div>
+                </div>
+                <Divider />
+                <div class="flex justify-between items-center flex-wrap">
+                    <div>
+                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
+                    </div>
+                    <div>
+                        <Button v-slot="slotProps" asChild class="p-button-success">
+                            <RouterLink :class="slotProps.class" to="/jobs/create"> <i class="pi pi-plus"></i> Add Job </RouterLink>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <template #content>
+            <ConfirmDialog></ConfirmDialog>
+            <DataTable
+                :value="jobs"
+                :paginator="true"
+                :loading="loading"
+                :rows="pagination.per_page"
+                :first="(pagination.current_page - 1) * pagination.per_page"
+                :totalRecords="pagination.total"
+                @page="onPageChange"
+                scrollable
+                scrollHeight="500px"
+                sortMode="multiple"
+                stripedRows
+                tableStyle="min-width: 50rem"
+            >
+
+            <Column header="Actions" style="width: 3rem">
+                    <template #body="slotProps">
+                        <div class="relative">
+                            <Button :aria-controls="`menu_${slotProps.data.id}`" aria-haspopup="true" class="p-button-text" icon="pi pi-ellipsis-v" @click="$refs[`menu_${slotProps.data.id}`].toggle($event)" />
+
+                            <Menu
+                                :id="`menu_${slotProps.data.id}`"
+                                :ref="`menu_${slotProps.data.id}`"
+                                :model="[
+                                    {
+                                        label: 'Edit',
+                                        icon: 'pi pi-pencil',
+                                        command: () => editButton(slotProps.data.id)
+                                    },
+                                    {
+                                        separator: true
+                                    },
+                                    {
+                                        label: 'Delete',
+                                        severity: 'danger',
+                                        icon: 'pi pi-trash',
+                                        class: 'menu-item-danger',
+                                        command: () => deleteJob(slotProps.data.id)
+                                    }
+                                ]"
+                                :popup="true"
+                            />
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Job Title">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="mr-2">{{ slotProps.data?.name }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Job Category">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="ms-1">({{ slotProps.data?.job_category?.name || 0 }})</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column :sortable="true" field="slots" header="Slots"></Column>
+                <Column :sortable="true" field="created_at" header="Created Date"></Column>
+            </DataTable>
+        </template>
+    </Card>
+</template>
+
+<style>
+.p-datatable-scrollable-thead > tr > th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+
+</style>

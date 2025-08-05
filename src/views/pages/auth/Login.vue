@@ -38,9 +38,6 @@ const handleLogin = async () => {
 
         success.value = 'Login successful!';
 
-        console.log('Token after login:', token);
-
-        // Redirect to dashboard (you can use router.push for SPA navigation)
         router.push('/dashboard');
     } catch (err) {
         // Show backend error message or fallback

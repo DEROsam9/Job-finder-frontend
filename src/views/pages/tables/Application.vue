@@ -1,254 +1,270 @@
-<template>
-    <div class="p-4">
-        <div class="card p-4 shadow-md rounded-xl bg-white">
-            <BreadCrumb :items="breadcrumbItems" />
-
-            <h2 class="text-2xl font-bold mb-4">Applications</h2>
-
-            <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="true" :statusOptions="statusOptions" />
-
-            <div v-if="loading">
-                <p>Loading applications...</p>
-            </div>
-
-            <div v-else>
-                <DataTable :value="applications?.data || []" scrollable scrollHeight="400px" dataKey="id" class="text-sm">
-                    <ProgressSpinner v-if="loading" style="width: 50px; height: 50px" strokeWidth="8" class="mx-auto mb-4" />
-
-                    <div v-if="!loading && applications.length === 0" class="text-gray-500 italic mt-4">No applications found matching your filters.</div>
-
-                    <!-- Full Name -->
-                    <Column header="Name" style="min-width: 12rem">
-                        <template #body="{ data }"> {{ data.client.first_name }} {{ data.client.middle_name }} {{ data.client.surname }} </template>
-                    </Column>
-
-                    <!-- Email -->
-                    <Column header="Email" style="min-width: 12rem">
-                        <template #body="{ data }">{{ data.client.email }}</template>
-                    </Column>
-
-                    <!-- Phone -->
-                    <Column header="Phone" style="min-width: 10rem">
-                        <template #body="{ data }">{{ data.client.phone_number }}</template>
-                    </Column>
-
-                    <!-- Passport -->
-                    <Column header="Passport" style="min-width: 10rem">
-                        <template #body="{ data }">{{ data.client.passport_number }}</template>
-                    </Column>
-
-                    <!-- ID Number -->
-                    <Column header="ID Number" style="min-width: 10rem">
-                        <template #body="{ data }">{{ data.client.id_number }}</template>
-                    </Column>
-
-                    <!-- Created Date -->
-                    <Column header="Created" style="min-width: 12rem">
-                        <template #body="{ data }">{{ formatDate(data.created_at) }}</template>
-                    </Column>
-
-                    <!-- Status -->
-                    <Column header="Status" style="min-width: 10rem">
-                        <template #body="{ data }">
-                            <Tag :value="data.status.name" :severity="getSeverity(data.status.name)" />
-                        </template>
-                    </Column>
-
-                    <!-- Actions -->
-                    <Column header="Actions" style="min-width: 100px">
-                        <template #body="{ data }">
-                            <Menu :model="getMenuItems(data)" popup :ref="(el) => el && menuRefs.set(data.id, el)" />
-                            <Button icon="pi pi-ellipsis-v" text @click="(event) => toggleMenu(event, data.id)" />
-                        </template>
-                    </Column>
-                </DataTable>
-            </div>
-
-            <ConfirmDialog />
-        </div>
-    </div>
-</template>
-
 <script setup>
-import axiosClient from '@/axiosClient';
-import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
-import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
-import Button from 'primevue/button';
-import ConfirmDialog from 'primevue/confirmdialog';
+import { onMounted, ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import Menu from 'primevue/menu';
-import Tag from 'primevue/tag';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { fetchApplications, removeApplication } from '@/api/applications';
+import {formatDate, getSeverity} from '@/utils/index';
 
-const filters = ref({
-    nameEmail: '',
-    passportId: '',
-    dateRange: null,
-    status: ''
+const confirm = useConfirm();
+const toast = useToast();
+const router = useRouter();
+const loading = ref(false);
+const selectedId = ref(0);
+
+onMounted(() => {
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    fetchData(params);
 });
 
-watch(
-    () => filters.value.dateRange,
-    () => {
-        applyFilters();
-    },
-    { deep: true }
-);
+const applications = ref([]);
+const filters = ref('');
 
 const applyFilters = () => {
-    fetchApplications();
+    // fetchClients();
 };
 
-// Refs and state
-const menuRefs = new Map();
-const applications = ref([]);
-const loading = ref(true);
+const pagination = reactive({
+    current_page: '',
+    total_pages: '',
+    total: '',
+    per_page: ''
+});
 
-const toast = useToast();
-const confirm = useConfirm();
-const router = useRouter();
-const route = useRoute();
-
-const formatDateForQuery = (date) => {
-    if (!date) return undefined;
-    const d = new Date(date);
-    return d.toISOString().split('T')[0]; // Returns 'YYYY-MM-DD'
+const onPageChange = (event) => {
+    pagination.current_page = Math.floor(event.first / event.rows) + 1;
+    pagination.per_page = event.rows;
+    const params = {
+        page: event.rows,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    fetchData(params);
 };
-// Fetch applications
-const fetchApplications = async () => {
-    loading.value = true;
-    try {
-        const response = await axiosClient.get('v1/applications', {
-            params: {
-                search: filters.value.nameEmail || undefined,
-                passport_id: filters.value.passportId || undefined,
-                status: filters.value.status || undefined,
-                from_date: formatDateForQuery(filters.value.dateRange?.[0]),
-                to_date: formatDateForQuery(filters.value.dateRange?.[1])
+
+const editButton = (id) => {
+    router.push(`/applications/edit/${id}`);
+};
+
+const viewApplication = (id) => {
+    router.push(`/applications/edit/${id}`);
+};
+const deleteApplication = (id) => {
+    selectedId.value = id;
+    confirm.require({
+        message: 'Do you want to delete this record?',
+        header: 'Delete Application',
+        icon: 'pi pi-info-circle',
+        rejectLabel: 'Cancel',
+        rejectProps: {
+            label: 'Cancel',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Delete',
+            severity: 'danger'
+        },
+        accept: async () => {
+            try {
+                const response = await removeApplication(selectedId.value);
+                if (response.success) {
+                    toast.add({ severity: 'success', summary: 'Deleted', detail: 'Record deleted successfully', life: 3000 });
+                    console.log('Customer refresh triggered!');
+                    const params = {
+                        orderBy: 'created_at',
+                        sortedBy: 'desc'z
+                    };
+                    await fetchData(params);
+                } else {
+                    toast.add({ severity: 'warn', summary: 'Failed', detail: 'Could not delete record', life: 3000 });
+                }
+            } catch (error) {
+                toast.add({ severity: 'error', summary: 'Error', detail: 'An error occurred while deleting', life: 3000 });
+                console.error(error);
             }
-        });
+        },
+        reject: () => {
+            toast.add({ severity: 'info', summary: 'Cancelled', detail: 'Deletion cancelled', life: 3000 });
+        }
+    });
+};
 
-        applications.value = response.data.data; // ✅ FIXED HERE
-    } catch (error) {
-        console.error('❌ Failed to fetch applications:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch applications', life: 3000 });
+const fetchData = async (params) => {
+    try {
+
+        loading.value = true;
+        const response = await fetchApplications(params);
+
+        console.log(response)
+
+        applications.value = response.data.data.data;
+
+        console.log(response.data.data.per_page)
+
+        if (response.data.data.per_page && response.data.data.total && response.data.data.current_page) {
+            pagination.per_page = response.data.data.per_page ?? 0;
+            pagination.total = response.data.data.total ?? 0;
+            pagination.current_page = response.data.data.current_page;
+
+            pagination.total_pages = pagination.per_page > 0 && pagination.total > 0 ? Math.ceil(pagination.total / pagination.per_page) : 0;
+        } else {
+            pagination.total_pages = 0;
+        }
+    } catch (e) {
+        console.log(e);
+        loading.value = false;
     } finally {
         loading.value = false;
     }
 };
-
-onMounted(fetchApplications);
-
-// Format date
-const formatDate = (value) => {
-    const date = new Date(value);
-    return isNaN(date)
-        ? ''
-        : date.toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric'
-          });
-};
-
-// Status tag color
-const getSeverity = (status) => {
-    switch ((status || '').toLowerCase()) {
-        case 'active':
-        case 'approved':
-        case 'verified':
-            return 'success';
-        case 'pending':
-            return 'warning';
-        case 'rejected':
-        case 'cancelled':
-            return 'danger';
-        default:
-            return null;
-    }
-};
-
-// Menu toggle handler
-const toggleMenu = (event, id) => {
-    const menu = menuRefs.get(id);
-    if (menu) {
-        menu.toggle(event);
-    }
-};
-
-// Menu actions
-const getMenuItems = (data) => [
-    {
-        label: 'View',
-        icon: 'pi pi-eye',
-        command: () => viewApplication(data)
-    },
-    {
-        label: 'Edit',
-        icon: 'pi pi-pencil',
-        command: () => editApplication(data)
-    },
-    {
-        label: 'Delete',
-        icon: 'pi pi-trash',
-        command: () => confirmDelete(data)
-    }
-];
-
-// Navigation handlers
-const viewApplication = (app) => {
-    router.push({ name: 'application.view', params: { id: app.id } });
-};
-
-const editApplication = (app) => {
-    router.push({ name: 'application.edit', params: { id: app.id } });
-};
-
-// Delete confirmation
-const confirmDelete = (app) => {
-    confirm.require({
-        message: `Are you sure you want to delete Application #${app.id}?`,
-        header: 'Confirm Deletion',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Yes',
-        rejectLabel: 'No',
-        accept: () => deleteApplication(app.id)
-    });
-};
-
-// Delete logic
-const deleteApplication = async (id) => {
-    try {
-        await axiosClient.delete(`/v1/applications/${id}`);
-        applications.value = applications.value.filter((a) => a.id !== id);
-        toast.add({ severity: 'success', summary: 'Deleted', detail: 'Application deleted successfully', life: 3000 });
-        menuRefs.delete(id); // Clean up reference
-    } catch (error) {
-        console.error('Failed to delete application:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete application', life: 3000 });
-    }
-};
-
-// Breadcrumb
-const breadcrumbItems = [
-    { label: 'Application', to: '/applications' },
-];
-
-const statusOptions = [
-    { label: 'Draft', value: 'Draft' },
-    { label: 'Active', value: 'Active' },
-    { label: 'Open', value: 'Open' },
-    { label: 'Closed', value: 'Closed' },
-    { label: 'Under Review', value: 'Under Review' },
-    { label: 'Shortlisted', value: 'Shortlisted' },
-    { label: 'Interview Scheduled', value: 'Interview Scheduled' },
-    { label: 'Interviewed', value: 'Interviewed' },
-    { label: 'Offered', value: 'Offered' },
-    { label: 'Hired', value: 'Hired' },
-    { label: 'Rejected', value: 'Rejected' },
-    { label: 'Withdrawn', value: 'Withdrawn' },
-    { label: 'On Hold', value: 'On Hold' }
-];
 </script>
+
+<template>
+    <BreadCrumb :items="breadcrumbItems" />
+    <Card>
+        <template #title>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <div class="font-bold text-lg">Applications</div>
+                    <div class="text-sm">List of all applications</div>
+                </div>
+                <Divider />
+                <div class="flex justify-between items-center flex-wrap">
+                    <div>
+                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
+                    </div>
+                </div>
+            </div>
+        </template>
+        <template #content>
+            <ConfirmDialog></ConfirmDialog>
+            <DataTable
+                :value="applications"
+                :paginator="true"
+                :loading="loading"
+                :rows="pagination.per_page"
+                :first="(pagination.current_page - 1) * pagination.per_page"
+                :totalRecords="pagination.total"
+                @page="onPageChange"
+                scrollable
+                scrollHeight="500px"
+                sortMode="multiple"
+                stripedRows
+                tableStyle="min-width: 50rem"
+            >
+                <Column header="Actions" style="width: 3rem">
+                    <template #body="slotProps">
+                        <div class="relative">
+                            <Button :aria-controls="`menu_${slotProps.data.id}`" aria-haspopup="true" class="p-button-text" icon="pi pi-ellipsis-v" @click="$refs[`menu_${slotProps.data.id}`].toggle($event)" />
+
+                            <Menu
+                                :id="`menu_${slotProps.data.id}`"
+                                :ref="`menu_${slotProps.data.id}`"
+                                :model="[
+                                    {
+                                        label: 'View',
+                                        icon: 'pi pi-eye',
+                                        command: () => viewApplication(slotProps.data.id)
+                                    },
+                                    {
+                                        label: 'Edit',
+                                        icon: 'pi pi-pencil',
+                                        command: () => editButton(slotProps.data.id)
+                                    },
+                                    {
+                                        separator: true
+                                    },
+                                    {
+                                        label: 'Delete',
+                                        severity: 'danger',
+                                        icon: 'pi pi-trash',
+                                        class: 'menu-item-danger',
+                                        command: () => deleteApplication(slotProps.data.id)
+                                    }
+                                ]"
+                                :popup="true"
+                            />
+                        </div>
+                    </template>
+                </Column>
+                <Column :sortable="true" field="application_code" header="Application Code"></Column>
+
+                <Column header="Client Name">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="mr-2">{{ `${slotProps.data?.client?.first_name}  ${slotProps.data?.client?.surname}` }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Email">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="mr-2">{{ slotProps.data?.client?.email }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Phone Number">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span>{{ slotProps.data?.client?.phone_number }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Passport Number">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="ms-1">
+                                {{ slotProps.data?.client?.passport_number ? '******' + slotProps.data.client?.passport_number.slice(-3) : '-' }}
+                            </span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="ID Number">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="ms-1">
+                                {{ slotProps.data?.client?.id_number ? '******' + slotProps.data.client?.id_number.slice(-3) : '-' }}
+                            </span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Job Applied" style="min-width: 10rem">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="mr-2">{{ `${slotProps.data?.career?.name}` }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column header="Status" style="min-width: 10rem">
+                    <template #body="slotProps">
+                        <Tag :value="slotProps.data.status.name" :severity="getSeverity(slotProps.data.status.name)" />
+                    </template>
+                </Column>
+                <Column header="Application Date" style="min-width: 10rem">
+                    <template #body="slotProps">
+                        <div class="flex flex-row">
+                            <span class="mr-2">{{ formatDate(slotProps.data?.created_at) }}</span>
+                        </div>
+                    </template>
+                </Column>
+            </DataTable>
+        </template>
+    </Card>
+</template>
+
+<style>
+.p-datatable-scrollable-thead > tr > th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+</style>

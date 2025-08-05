@@ -1,24 +1,28 @@
 import axios from 'axios';
-import { useAuthStore } from '@/stores';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_APP_API_ROOT,
+    baseURL: import.meta.env.VITE_APP_API_ROOT
 });
 
 api.interceptors.request.use((config) => {
-    const auth = useAuthStore(); // move it here
 
     config.headers.Accept = 'application/json';
 
-    const token = auth.getAccessToken;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    const token = localStorage.getItem('token');
 
-    const organizationId = auth.getOrganization.id;
-    if (organizationId) {
-        config.headers['X-Tenant-Id'] = organizationId;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
 
     return config;
 });
 
 export { api };
+
+export const generateUrl = (root, params) => {
+    let url = root;
+    url += Object.keys(params)
+        .map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(params[key]))
+        .join('&');
+    url = url.replace(root + '?&', url + '?');
+
+    return url;
+};
