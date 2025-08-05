@@ -18,7 +18,7 @@ const selectedId = ref(0);
 const categories = ref([]);
 const statuses = ref([]);
 
-const breadcrumbItems = ref([{ label: 'Categories', to: '/categories' }]);
+const breadcrumbItems = ref([{ label: 'Categories', to: '/category' }]);
 
 const applyFilters = (params) => {
     fetchData(params);
@@ -169,7 +169,7 @@ const fetchData = async (params) => {
                 </div>
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion :showNameEmail="true" :showPassportId="false" :showDate="true" :showStatus="true" :status="statuses" :showApplication="false" :showJobCategory="true" :showJobTitle="false" @applyFilters="applyFilters" />
+                        <FilterAccordion :showNameEmail="false" :showPassportId="false" :showDate="true" :showStatus="true" :status="statuses" :showApplication="false" :showJobCategory="true" :showJobTitle="false" @applyFilters="applyFilters" />
                     </div>
                 </div>
                 <Divider />
