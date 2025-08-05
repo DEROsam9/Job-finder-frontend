@@ -1,36 +1,36 @@
 <template>
-    <div class="p-4 bg-white shadow rounded-md" v-if="application">
+    <div class="p-4 bg-white dark:bg-black shadow rounded-md" v-if="application">
         <Toast />
 
         <BreadCrumb :items="breadcrumbItems" />
-        <h2 class="text-xl font-bold mb-4">Edit Application #{{ application.id }}</h2>
+        <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Edit Application #{{ application.id }}</h2>
 
         <form @submit.prevent="updateApplication" class="space-y-4">
             <!-- Application Code -->
             <div>
-                <label class="block font-semibold mb-1">Application Code</label>
+                <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Application Code</label>
                 <InputText v-model="form.application_code" class="w-full" />
             </div>
 
             <!-- Remarks -->
             <div>
-                <label class="block font-semibold mb-1">Remarks</label>
+                <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Remarks</label>
                 <Textarea v-model="form.remarks" rows="4" class="w-full" />
             </div>
 
             <!-- Status Dropdown -->
             <div>
-                <label class="block font-semibold mb-1">Status</label>
+                <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-300">Status</label>
                 <Dropdown v-model="form.status_id" :options="statuses" optionLabel="name" optionValue="id" placeholder="Select a status" class="w-full" />
             </div>
 
             <!-- Client & Career Info (Readonly) -->
-            <div class="bg-gray-50 p-3 rounded border text-sm space-y-1">
-                <p><strong>Client:</strong> {{ application.client?.first_name }} {{ application.client?.surname }}</p>
-                <p><strong>Email:</strong> {{ application.client?.email }}</p>
-                <p><strong>Phone:</strong> {{ application.client?.phone_number }}</p>
-                <p><strong>Career:</strong> {{ application.career?.name }}</p>
-                <p><strong>Description:</strong> {{ application.career?.description }}</p>
+            <div class="bg-gray-50 dark:bg-gray-900 p-3 rounded border dark:border-gray-700 text-sm space-y-1">
+                <p class="text-gray-800 dark:text-gray-200"><strong>Client:</strong> {{ application.client?.first_name }} {{ application.client?.surname }}</p>
+                <p class="text-gray-800 dark:text-gray-200"><strong>Email:</strong> {{ application.client?.email }}</p>
+                <p class="text-gray-800 dark:text-gray-200"><strong>Phone:</strong> {{ application.client?.phone_number }}</p>
+                <p class="text-gray-800 dark:text-gray-200"><strong>Career:</strong> {{ application.career?.name }}</p>
+                <p class="text-gray-800 dark:text-gray-200"><strong>Description:</strong> {{ application.career?.description }}</p>
             </div>
 
             <!-- Submit -->
@@ -38,12 +38,12 @@
         </form>
     </div>
 
-    <div v-else class="p-4">Loading...</div>
+    <div v-else class="p-4 text-gray-800 dark:text-gray-200">Loading...</div>
 </template>
 
 <script setup>
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
-import axiosClient from 'axios'; // Adjust based on your actual axios path
+import axiosClient from 'axios';
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 // PrimeVue Components
@@ -126,5 +126,37 @@ onMounted(fetchData);
 <style scoped>
 label {
     font-weight: 500;
+}
+
+/* PrimeVue Dark Mode Overrides */
+:deep(.p-dropdown) {
+    background: var(--surface-a);
+    border-color: var(--surface-d);
+    color: var(--text-color);
+}
+
+:deep(.p-dropdown .p-dropdown-label) {
+    color: var(--text-color);
+}
+
+:deep(.p-inputtext) {
+    background: var(--surface-a);
+    border-color: var(--surface-d);
+    color: var(--text-color);
+}
+
+:deep(.p-inputtext:enabled:hover) {
+    border-color: var(--primary-color);
+}
+
+:deep(.p-inputtext:enabled:focus) {
+    box-shadow: 0 0 0 0.2rem var(--primary-300);
+    border-color: var(--primary-color);
+}
+
+:deep(.p-textarea) {
+    background: var(--surface-a);
+    border-color: var(--surface-d);
+    color: var(--text-color);
 }
 </style>
