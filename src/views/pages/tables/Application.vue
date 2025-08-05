@@ -27,6 +27,8 @@ onMounted(async () => {
     fetchData(params);
 });
 
+const breadcrumbItems = [{ label: 'Application', to: '/applications' }];
+
 const applications = ref([]);
 const filters = ref('');
 

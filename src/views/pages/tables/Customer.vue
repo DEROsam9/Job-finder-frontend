@@ -1,6 +1,7 @@
 <script setup>
 import { fetchClients, removeClient } from '@/api/clients';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import { formatDate } from '@/utils/index';
 import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
@@ -14,7 +15,7 @@ const showModal = ref(false);
 const currentClient = ref(null);
 const clients = ref([]);
 
-const breadcrumbItems = [{ label: 'Clients', to: '/clients' }];
+const breadcrumbItems = [{ label: 'Clients', to: '/customers' }];
 
 const filters = ref({
     nameEmail: '',

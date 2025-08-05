@@ -18,7 +18,7 @@ const selectedId = ref(0);
 const categories = ref([]);
 const statuses = ref([]);
 
-const breadcrumbItems = ref([{ label: 'Categories', to: '/categories' }]);
+const breadcrumbItems = ref([{ label: 'Categories', to: '/category' }]);
 
 const applyFilters = (params) => {
     fetchData(params);

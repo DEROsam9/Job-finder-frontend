@@ -16,6 +16,8 @@ const loading = ref(false);
 const selectedId = ref(0);
 const statuses = ref([]);
 
+const breadcrumbItems = [{ label: 'Careers', to: '/jobs' }];
+
 const fetchStatuses = async () => {
     try {
         const response = await axiosClient.get('/v1/statuses');
