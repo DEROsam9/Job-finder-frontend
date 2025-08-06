@@ -1,160 +1,256 @@
-<template>
-    <div class="p-4">
-        <div class="card p-4 shadow-md rounded-xl bg-white">
-            <!-- 🔹 Breadcrumbs -->
-            <BreadCrumb :items="breadcrumbItems" />
-
-            <h2 class="text-2xl font-bold mb-4">Clients</h2>
-
-            <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="false" :showStatus="false" @input="applyFilters" />
-
-            <div class="flex justify-end mb-4">
-                <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
-            </div>
-
-            <DataTable :value="clients" paginator :rows="10" dataKey="id" :loading="loading" scrollable scrollHeight="400px" class="text-sm" tableStyle="min-width: 50rem">
-                <template #empty> No clients found. </template>
-                <template #loading> Loading client data. Please wait... </template>
-
-                <Column field="first_name" header="First Name" style="min-width: 10rem" />
-                <Column field="surname" header="Surname" style="min-width: 10rem" />
-                <Column field="phone_number" header="Phone Number" style="min-width: 12rem" />
-                <Column field="email" header="Email" style="min-width: 14rem" />
-                <Column field="passport_number" header="Passport" style="min-width: 10rem" />
-                <Column field="id_number" header="ID Number" style="min-width: 10rem" />
-
-                <Column header="Actions" style="min-width: 8rem">
-                    <template #body="{ data }">
-                        <Menu :model="getActions(data)" popup :ref="(el) => (actionMenus[data.id] = el)" />
-                        <Button icon="pi pi-ellipsis-v" text @click="actionMenus[data.id]?.toggle($event)" />
-                    </template>
-                </Column>
-            </DataTable>
-
-            <ConfirmDialog />
-            <ClientFormModal v-model:show="showModal" :mode="editClient ? 'edit' : 'add'" :client="editClient" @save="handleSave" />
-        </div>
-    </div>
-</template>
-
 <script setup>
-import axiosClient from '@/axiosClient';
+import { fetchClients, removeClient } from '@/api/clients';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
-import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import { formatDate } from '@/utils';
 import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
-import { onMounted, ref } from 'vue';
+import { useToast } from 'primevue/usetoast';
+import { onMounted, reactive, ref } from 'vue';
 
-const showModal = ref(false);
-const editClient = ref(null);
 const confirm = useConfirm();
-
-const breadcrumbItems = [
-    { label: 'Clients', to: '/customers' }
-];
-
+const toast = useToast();
+const loading = ref(false);
+const showModal = ref(false);
+const currentClient = ref(null);
 const clients = ref([]);
-const loading = ref(true);
-const actionMenus = ref({});
+
+const breadcrumbItems = [{ label: 'Clients', to: '/clients' }];
 
 const filters = ref({
     nameEmail: '',
-    passportId: '',
-    dateRange: null
+    passportId: ''
 });
 
-const applyFilters = () => {
-    fetchClients();
+const pagination = reactive({
+    current_page: 1,
+    total_pages: 1,
+    total: 0,
+    per_page: 10
+});
+
+const applyFilters = params => {
+    fetchData(params);
 };
 
-async function fetchClients() {
-    loading.value = true;
+const openAdd = () => {
+    currentClient.value = null;
+    showModal.value = true;
+};
+
+const editClient = (client) => {
+    currentClient.value = { ...client };
+    showModal.value = true;
+};
+
+const handleSave = async () => {
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    await fetchData(params);
+    showModal.value = false;
+};
+
+const fetchData = async (params) => {
     try {
-        const params = {
-            name: filters.value.nameEmail || undefined,
-            passport_number: filters.value.passportId || undefined,
-            id_number: filters.value.passportId || undefined,
-            start_date: filters.value.dateRange?.[0]?.toISOString().split('T')[0],
-            end_date: filters.value.dateRange?.[1]?.toISOString().split('T')[0]
-        };
-        const resp = await axiosClient.get('/v1/clients', { params });
-        clients.value = Array.isArray(resp.data?.data?.data) ? resp.data.data.data : [];
-    } catch {
-        clients.value = [];
+        loading.value = true;
+
+        const response = await fetchClients(params);
+
+        clients.value = response.data.data.data || [];
+
+        // Update pagination
+        pagination.current_page = response.data.data.current_page;
+        pagination.total = response.data.data.total;
+        pagination.per_page = response.data.data.per_page;
+        pagination.total_pages = response.data.data.last_page;
+
+        console.log(pagination)
+
+    } catch (error) {
+        console.error('Error fetching clients:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to fetch clients',
+            life: 3000
+        });
     } finally {
         loading.value = false;
     }
-}
-
-onMounted(fetchClients);
-
-const getActions = (row) => [
-    {
-        label: 'Edit',
-        icon: 'pi pi-pencil',
-        command: () => openEdit(row)
-    },
-    {
-        label: 'Delete',
-        icon: 'pi pi-trash',
-        command: () => confirmDelete(row),
-        style: { color: 'red' }
-    }
-];
-
-const openAdd = () => {
-    editClient.value = null;
-    showModal.value = true;
 };
 
-const openEdit = (client) => {
-    editClient.value = client;
-    showModal.value = true;
+const onPageChange = (event) => {
+    pagination.current_page = event.page + 1;
+    const params = {
+        page: pagination.current_page,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    fetchData(params);
 };
 
-const confirmDelete = (row) => {
+const deleteClients = async (id) => {
     confirm.require({
-        message: `Are you sure you want to delete ${row.first_name}?`,
-        header: 'Confirm Deletion',
-        icon: 'pi pi-exclamation-triangle',
+        message: 'Do you want to delete this client?',
+        header: 'Delete Client',
+        icon: 'pi pi-info-circle',
         accept: async () => {
             try {
-                await axiosClient.delete(`/v1/clients/${row.id}`);
-                await fetchClients();
+                await removeClient(id);
+                toast.add({
+                    severity: 'success',
+                    summary: 'Deleted',
+                    detail: 'Client deleted successfully',
+                    life: 3000
+                });
+                const params = {
+                    page: pagination.current_page,
+                    orderBy: 'created_at',
+                    sortedBy: 'desc'
+                };
+                await fetchData(params);
             } catch (error) {
-                console.error('❌ Delete failed:', error);
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to delete client',
+                    life: 3000
+                });
             }
+        },
+        reject: () => {
+            toast.add({
+                severity: 'info',
+                summary: 'Cancelled',
+                detail: 'Deletion cancelled',
+                life: 3000
+            });
         }
     });
 };
 
-const handleSave = async (data) => {
-    try {
-        if (editClient.value) {
-            await axiosClient.put(`/v1/clients/${editClient.value.id}`, data);
-        } else {
-            await axiosClient.post('/v1/clients', data);
-        }
-        await fetchClients();
-        showModal.value = false;
-    } catch (error) {
-        console.error('❌ Save failed:', error);
-    }
-};
+onMounted(() => {
+    const params = {
+        page: 1,
+        orderBy: 'created_at',
+        sortedBy: 'desc'
+    };
+    fetchData(params);
+});
 </script>
 
-<style scoped>
-.borderless-table ::v-deep(.p-datatable-table) {
-    border: none;
+<template>
+    <BreadCrumb :items="breadcrumbItems" />
+    <Card>
+        <template #title>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <div class="font-bold text-lg">Clients</div>
+                    <div class="text-sm">List of all Clients</div>
+                </div>
+                <Divider />
+                <div class="flex justify-between items-center flex-wrap">
+                    <div>
+                        <FilterAccordion
+                            v-model="filters"
+                            :showNameEmail="true"
+                            :showPassportId="true"
+                            :showDate="false"
+                            :showStatus="false"
+                            @applyFilters="applyFilters"
+                        />
+                    </div>
+                    <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
+                </div>
+            </div>
+        </template>
+        <template #content>
+            <ConfirmDialog></ConfirmDialog>
+            <ClientFormModal v-model:show="showModal" :mode="currentClient ? 'edit' : 'add'" :client="currentClient" @save="handleSave" />
+
+            <DataTable
+                :value="clients"
+                :paginator="true"
+                :loading="loading"
+                :rows="pagination.per_page"
+                :first="(pagination.current_page - 1) * pagination.per_page"
+                :totalRecords="pagination.total"
+                @page="onPageChange"
+                scrollable
+                scrollHeight="500px"
+                sortMode="multiple"
+                stripedRows
+                tableStyle="min-width: 50rem"
+            >
+                <template #empty> No clients found. </template>
+                <template #loading> Loading client data. Please wait... </template>
+
+                <Column field="first_name" header="First Name" :sortable="true" />
+                <Column field="surname" header="Surname" :sortable="true" />
+                <Column field="phone_number" header="Phone Number" />
+                <Column field="email" header="Email" />
+                <Column header="Passport Number">
+                    <template #body="slotProps">
+                        {{ slotProps.data.passport_number || '-' }}
+                    </template>
+                </Column>
+                <Column header="ID Number">
+                    <template #body="slotProps">
+                        {{ slotProps.data.id_number || '-' }}
+                    </template>
+                </Column>
+                <Column header="Created At">
+                    <template #body="slotProps">
+                        {{ formatDate(slotProps.data.created_at) }}
+                    </template>
+                </Column>
+
+                <Column header="Actions" style="width: 3rem">
+                    <template #body="slotProps">
+                        <div class="relative">
+                            <Button :aria-controls="`menu_${slotProps.data.id}`" aria-haspopup="true" class="p-button-text" icon="pi pi-ellipsis-v" @click="$refs[`menu_${slotProps.data.id}`].toggle($event)" />
+
+                            <Menu
+                                :id="`menu_${slotProps.data.id}`"
+                                :ref="`menu_${slotProps.data.id}`"
+                                :model="[
+                                    {
+                                        label: 'Edit',
+                                        icon: 'pi pi-pencil',
+                                        command: () => editClient(slotProps.data)
+                                    },
+                                    {
+                                        separator: true
+                                    },
+                                    {
+                                        label: 'Delete',
+                                        severity: 'danger',
+                                        icon: 'pi pi-trash',
+                                        class: 'menu-item-danger',
+                                        command: () => deleteClients(slotProps.data.id)
+                                    }
+                                ]"
+                                :popup="true"
+                            />
+                        </div>
+                    </template>
+                </Column>
+            </DataTable>
+        </template>
+    </Card>
+</template>
+
+<style>
+.p-datatable-scrollable-thead > tr > th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
 }
 
-.borderless-table ::v-deep(.p-datatable-thead > tr > th),
-.borderless-table ::v-deep(.p-datatable-tbody > tr > td) {
-    border: none !important;
-}
-
-.borderless-table ::v-deep(.p-datatable) {
-    border: none;
-    box-shadow: none;
+.menu-item-danger {
+    color: #ef4444 !important;
 }
 </style>

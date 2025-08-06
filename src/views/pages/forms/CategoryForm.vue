@@ -1,135 +1,166 @@
 <template>
-  <div class="card">
-    <div class="p-6">
-      <BreadCrumb :items="breadcrumbItems" />
-      <h2 class="text-xl font-semibold mb-4">{{ isEditMode ? 'Edit Category' : 'Create New Category' }}</h2>
+    <div class="grid">
+        <BreadCrumb :items="breadcrumbItems" />
+        <Card>
+            <template #title>
+                {{ isEditMode ? 'Edit Job Category' : 'Create Job Category' }}
+            </template>
+            <template #content>
+                <form @submit.prevent="handleSubmit">
+                    <div class="grid">
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="name">Category Name *</label>
+                                <InputText id="name" v-model="form.name" class="w-full" :class="{ 'p-invalid': errors.name }" />
+                                <small v-if="errors.name" class="p-error">{{ errors.name[0] }}</small>
+                            </div>
+                        </div>
 
-      <form @submit.prevent="handleSubmit">
-        <div class="mb-3">
-          <label class="block mb-1 font-medium">Category Name</label>
-          <input v-model="form.name" type="text" class="w-full border border-gray-300 rounded px-3 py-2" required />
-        </div>
-        <div class="mb-3">
-          <label class="block mb-1 font-medium">Description</label>
-          <textarea v-model="form.description" class="w-full border border-gray-300 rounded px-3 py-2" rows="3"></textarea>
-        </div>
+                        <div class="col-12 md:col-6">
+                            <div class="field">
+                                <label for="status">Status *</label>
+                                <Dropdown id="status" v-model="form.status_id" :options="statuses" option-label="name" option-value="id" placeholder="Select Status" class="w-full" :class="{ 'p-invalid': errors.status_id }" />
+                                <small v-if="errors.status_id" class="p-error">{{ errors.status_id[0] }}</small>
+                            </div>
+                        </div>
 
-        <div class="flex justify-end space-x-2">
-          <button @click="goBack" type="button" class="btn btn-secondary">Cancel</button>
-          <button type="submit" :class="isEditMode ? 'btn btn-primary' : 'btn btn-success'">
-            {{ isEditMode ? 'Update' : 'Create' }}
-          </button>
-        </div>
-      </form>
+                        <div class="col-12">
+                            <div class="field">
+                                <label for="description">Description</label>
+                                <Textarea id="description" v-model="form.description" rows="5" class="w-full" :class="{ 'p-invalid': errors.description }" />
+                                <small v-if="errors.description" class="p-error">{{ errors.description[0] }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12 flex justify-content-end gap-2">
+                            <Button label="Cancel" severity="secondary" @click="router.push('/category')" />
+                            <Button type="submit" :label="isEditMode ? 'Update Category' : 'Create Category'" :loading="loading" />
+                        </div>
+                    </div>
+                </form>
+            </template>
+        </Card>
     </div>
-  </div>
 </template>
 
-<script>
-import { ref, onMounted, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+<script setup>
 import axiosClient from '@/axiosClient';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-export default {
-  name: 'CategoryForm',
-  setup() {
-    const router = useRouter();
-    const route = useRoute();
-    const categoryId = route.params.id;
+const toast = useToast();
+const route = useRoute();
+const router = useRouter();
+const loading = ref(false);
+const statuses = ref([]);
 
-    const isEditMode = computed(() => !!categoryId);
+const isEditMode = computed(() => route.name === 'CategoryEdit');
 
-    const form = ref({
-      name: '',
-      description: '',
-    });
+const breadcrumbItems = computed(() => [
+    { label: 'Home', to: '/' },
+    { label: 'Categories', to: '/category' },
+    {
+        label: isEditMode.value ? 'Edit Category' : 'Create Category',
+        to: isEditMode.value ? `/category/edit/${route.params.id}` : '/category/create'
+    }
+]);
 
-    const breadcrumbItems = [
-      { label: 'Categories', to: '/category' }
-    ];
+const form = ref({
+    name: '',
+    description: '',
+    status_id: null
+});
 
-    const fetchCategory = () => {
-      if (isEditMode.value) {
-        axiosClient.get(`/v1/job-categories/${categoryId}`)
-          .then(response => {
-            form.value = response.data;
-          })
-          .catch(() => {
-            alert('Failed to load category.');
-          });
-      }
-    };
+const errors = ref({});
 
-    const createCategory = () => {
-      axiosClient.post('/v1/job-categories', form.value)
-        .then(() => {
-          router.push({ name: 'Category' });
-        })
-        .catch(() => {
-          alert('Failed to create category.');
+const fetchCategory = async () => {
+    try {
+        loading.value = true;
+        const response = await axiosClient.get(`v1/job-categories/${route.params.id}`);
+        form.value = {
+            name: response.data.name,
+            description: response.data.description,
+            status_id: response.data.status_id
+        };
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load category data',
+            life: 3000
         });
-    };
-
-    const updateCategory = () => {
-      axiosClient.put(`/v1/job-categories/${categoryId}`, form.value)
-        .then(() => {
-          router.push({ name: 'Category' });
-        })
-        .catch(() => {
-          alert('Failed to update category.');
-        });
-    };
-
-    const handleSubmit = () => {
-      if (isEditMode.value) {
-        updateCategory();
-      } else {
-        createCategory();
-      }
-    };
-
-    const goBack = () => {
-      router.back();
-    };
-
-    onMounted(() => {
-      fetchCategory();
-    });
-
-    return { form, isEditMode, handleSubmit, goBack, breadcrumbItems };
-  },
+        // router.push('/category');
+    } finally {
+        loading.value = false;
+    }
 };
+
+const fetchStatuses = async () => {
+    try {
+        const response = await axiosClient.get('/v1/statuses');
+        statuses.value = response.data;
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load statuses',
+            life: 3000
+        });
+    }
+};
+
+const handleSubmit = async () => {
+    try {
+        loading.value = true;
+        errors.value = {};
+
+        if (isEditMode.value) {
+            await axiosClient.put(`v1/job-categories/${route.params.id}`, form.value);
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category updated successfully',
+                life: 3000
+            });
+        } else {
+            await axiosClient.post('v1/job-categories', form.value);
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category created successfully',
+                life: 3000
+            });
+        }
+
+        router.push('/category');
+    } catch (error) {
+        if (error.response?.status === 422) {
+            errors.value = error.response.data.errors;
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: isEditMode.value ? 'Failed to update category' : 'Failed to create category',
+                life: 3000
+            });
+        }
+    } finally {
+        loading.value = false;
+    }
+};
+
+onMounted(async () => {
+    await fetchStatuses();
+    if (isEditMode.value) {
+        await fetchCategory();
+    }
+});
 </script>
 
 <style scoped>
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-}
-.btn-primary:hover {
-  background-color: #2563eb;
-}
-
-.btn-secondary {
-  background-color: #e5e7eb;
-  color: #374151;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-}
-.btn-secondary:hover {
-  background-color: #d1d5db;
-}
-
-.btn-success {
-  background-color: #10b981;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-}
-.btn-success:hover {
-  background-color: #059669;
+.field {
+    margin-bottom: 1.5rem;
 }
 </style>
