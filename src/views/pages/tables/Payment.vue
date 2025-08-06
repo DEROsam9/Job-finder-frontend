@@ -8,18 +8,21 @@ import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import PaymentModal from '../modals/PaymentModal.vue';
+import {downloadPaymentsExcel} from "@/api/downloads";
 
 const confirm = useConfirm();
 const toast = useToast();
 const router = useRouter();
 const loading = ref(false);
+const isLoading = ref(false);
 const selectedId = ref(0);
 const payments = ref([]);
 const status = ref([]);
-const showModal = ref(false);
-const selectedPayment = ref(null);
-const modalMode = ref('add');
+const filter_params = ref({
+    page: 1,
+    orderBy: 'created_at',
+    sortedBy: 'desc'
+});
 
 const breadcrumbItems = [{ label: 'Payments', to: '/payments' }];
 
@@ -48,6 +51,7 @@ onMounted(() => {
 });
 
 const applyFilters = (params) => {
+    filter_params.value = params
     fetchData(params);
 };
 
@@ -66,31 +70,8 @@ const onPageChange = (event) => {
         orderBy: 'created_at',
         sortedBy: 'desc'
     };
+    filter_params.value = params
     fetchData(params);
-};
-
-const openModal = (payment = null) => {
-    modalMode.value = payment ? 'edit' : 'add';
-    selectedPayment.value = payment;
-    showModal.value = true;
-};
-
-const savePayment = async (data) => {
-    try {
-        if (modalMode.value === 'edit') {
-            await paymentService.update(selectedPayment.value.id, data);
-            toast.add({ severity: 'success', summary: 'Updated', detail: 'Payment updated successfully', life: 3000 });
-        } else {
-            await paymentService.create(data);
-            toast.add({ severity: 'success', summary: 'Created', detail: 'Payment created successfully', life: 3000 });
-        }
-
-        showModal.value = false;
-        fetchData();
-    } catch (error) {
-        console.error('Error saving payment:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save payment', life: 3000 });
-    }
 };
 
 const deletePayment = (id) => {
@@ -168,6 +149,39 @@ const fetchStatusData = async (params) => {
         loading.value = false;
     }
 };
+
+
+async function downloadExcel() {
+    try {
+        await downloadPaymentsExcel(filter_params.value)
+            .then((Response) => {
+                let fileURL = window.URL.createObjectURL(
+                    new Blob([Response], {
+                        type: "application/vnd.ms-excel",
+                    })
+                );
+                let fileLink = document.createElement("a");
+
+                fileLink.href = fileURL;
+                fileLink.setAttribute(
+                    "download",
+                    "payments_report_" + Math.round(+new Date() / 1000) + ".xlsx"
+                );
+                document.body.appendChild(fileLink);
+
+                fileLink.click();
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    } catch (error) {
+        console.log(error);
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+
 </script>
 
 <template>
@@ -182,9 +196,23 @@ const fetchStatusData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion :status="status" :showPaidBy="true" :showPassportId="false" :showDate="true" :showStatus="true" :showAmountRange="true" :showTransactionRef="true" @applyFilters="applyFilters" />
+                        <FilterAccordion
+                            :status="status"
+                            :showPaidBy="true"
+                            :showPassportId="false"
+                            :showDate="true"
+                            :showStatus="true"
+                            :showAmountRange="true"
+                            :showTransactionRef="true"
+                            @applyFilters="applyFilters"
+                        />
                     </div>
-                    <Button label="Add Payment" icon="pi pi-plus" @click="openModal()" />
+                    <Button
+                        label="Download Excel"
+                        severity="info"
+                        icon="pi pi-download"
+                        @click="downloadExcel"
+                    />
                 </div>
             </div>
         </template>
@@ -217,17 +245,8 @@ const fetchStatusData = async (params) => {
                                 :ref="`menu_${slotProps.data.id}`"
                                 :model="[
                                     {
-                                        label: 'Edit',
-                                        icon: 'pi pi-pencil',
-                                        command: () => openModal(slotProps.data)
-                                    },
-                                    {
-                                        separator: true
-                                    },
-                                    {
-                                        label: 'Delete',
-                                        severity: 'danger',
-                                        icon: 'pi pi-trash',
+                                        label: 'Download Receipt',
+                                        icon: 'pi pi-download',
                                         class: 'menu-item-danger',
                                         command: () => deletePayment(slotProps.data.id)
                                     }
@@ -260,8 +279,6 @@ const fetchStatusData = async (params) => {
                     </template>
                 </Column>
             </DataTable>
-
-            <PaymentModal v-model:show="showModal" :mode="modalMode" :payment="selectedPayment" @save="savePayment" />
         </template>
     </Card>
 </template>
