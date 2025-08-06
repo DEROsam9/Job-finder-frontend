@@ -231,7 +231,8 @@ export default {
     fetchPaymentTotal() {
       axios.get('http://localhost:8000/api/v1/payments/total')
         .then(response => {
-          this.totalPayment = response.data.total;
+          this.totalPayment = new Intl.NumberFormat('en-US').format(response.data.total); 
+          
         });
     }
   }

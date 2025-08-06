@@ -182,7 +182,7 @@ const fetchStatusData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion :status="status" :showNameEmail="true" :showPassportId="false" :showDate="true" :showStatus="true" :showAmountRange="true" :showTransactionRef="true" @applyFilters="applyFilters" />
+                        <FilterAccordion :status="status" :showPaidBy="true" :showPassportId="false" :showDate="true" :showStatus="true" :showAmountRange="true" :showTransactionRef="true" @applyFilters="applyFilters" />
                     </div>
                     <Button label="Add Payment" icon="pi pi-plus" @click="openModal()" />
                 </div>

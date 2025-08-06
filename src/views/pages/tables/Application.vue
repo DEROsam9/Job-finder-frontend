@@ -1,5 +1,6 @@
 <script setup>
 import { fetchApplications, removeApplication } from '@/api/applications';
+import axiosClient from '@/axiosClient';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import { formatDate, getSeverity } from '@/utils';
@@ -21,8 +22,10 @@ const filter_params = ref({
     orderBy: 'created_at',
     sortedBy: 'desc'
 });
+const statuses = ref([]);
 
-onMounted(() => {
+onMounted(async () => {
+    await fetchStatuses();
     const params = {
         page: 1,
         orderBy: 'created_at',
@@ -31,12 +34,23 @@ onMounted(() => {
     fetchData(params);
 });
 
+const breadcrumbItems = [{ label: 'Application', to: '/applications' }];
+
 const applications = ref([]);
 const filters = ref('');
 
 const applyFilters = (params) => {
     filter_params.value = params
     fetchData(params);
+};
+
+const fetchStatuses = async () => {
+    try {
+        const response = await axiosClient.get('/v1/statuses');
+        statuses.value = response.data;
+    } catch (error) {
+        console.error('Error fetching statuses:', error);
+    }
 };
 const pagination = reactive({
     current_page: '',
@@ -88,7 +102,7 @@ const deleteApplication = (id) => {
                     console.log('Customer refresh triggered!');
                     const params = {
                         orderBy: 'created_at',
-                        sortedBy: 'desc'z
+                        sortedBy: 'desc'
                     };
                     await fetchData(params);
                 } else {
@@ -207,6 +221,8 @@ const fetchData = async (params) => {
                 stripedRows
                 tableStyle="min-width: 50rem"
             >
+                <template #empty> No JobsApplication found matching the filter. </template>
+                <template #loading> Loading client data. Please wait... </template>
                 <Column header="Actions" style="width: 3rem">
                     <template #body="slotProps">
                         <div class="relative">

@@ -1,7 +1,8 @@
 <script setup>
 import { fetchClients, removeClient } from '@/api/clients';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
-import { formatDate } from '@/utils';
+import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
+import { formatDate } from '@/utils/index';
 import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
@@ -14,7 +15,7 @@ const showModal = ref(false);
 const currentClient = ref(null);
 const clients = ref([]);
 
-const breadcrumbItems = [{ label: 'Clients', to: '/clients' }];
+const breadcrumbItems = [{ label: 'Clients', to: '/customers' }];
 
 const filters = ref({
     nameEmail: '',
@@ -28,7 +29,7 @@ const pagination = reactive({
     per_page: 10
 });
 
-const applyFilters = params => {
+const applyFilters = (params) => {
     fetchData(params);
 };
 
@@ -66,8 +67,7 @@ const fetchData = async (params) => {
         pagination.per_page = response.data.data.per_page;
         pagination.total_pages = response.data.data.last_page;
 
-        console.log(pagination)
-
+        console.log(pagination);
     } catch (error) {
         console.error('Error fetching clients:', error);
         toast.add({
@@ -153,14 +153,7 @@ onMounted(() => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion
-                            v-model="filters"
-                            :showNameEmail="true"
-                            :showPassportId="true"
-                            :showDate="false"
-                            :showStatus="false"
-                            @applyFilters="applyFilters"
-                        />
+                        <FilterAccordion v-model="filters" :showNameEmail="true" :showPassportId="true" :showDate="true" :showStatus="false" @applyFilters="applyFilters" />
                     </div>
                     <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
                 </div>
