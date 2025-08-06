@@ -1,5 +1,5 @@
 <script setup>
-import { fetchClients, removeClient } from '@/api/clients';
+import { fetchUsers} from '@/api/users.js';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import { formatDate } from '@/utils/index';
 import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
@@ -14,11 +14,10 @@ const showModal = ref(false);
 const currentClient = ref(null);
 const clients = ref([]);
 
-const breadcrumbItems = [{ label: 'Clients', to: '/clients' }];
+const breadcrumbItems = [{ label: 'Users', to: '/users' }];
 
 const filters = ref({
     nameEmail: '',
-    passportId: ''
 });
 
 const pagination = reactive({
@@ -56,7 +55,7 @@ const fetchData = async (params) => {
     try {
         loading.value = true;
 
-        const response = await fetchClients(params);
+        const response = await fetchUsers(params);
 
         clients.value = response.data.data.data || [];
 
@@ -147,8 +146,8 @@ onMounted(() => {
         <template #title>
             <div class="flex flex-col gap-4">
                 <div>
-                    <div class="font-bold text-lg">Clients</div>
-                    <div class="text-sm">List of all Clients</div>
+                    <div class="font-bold text-lg">Users</div>
+                    <div class="text-sm">List of all users</div>
                 </div>
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
@@ -156,13 +155,16 @@ onMounted(() => {
                         <FilterAccordion
                             v-model="filters"
                             :showNameEmail="true"
-                            :showPassportId="true"
                             :showDate="false"
                             :showStatus="false"
                             @applyFilters="applyFilters"
                         />
+                    </div> 
+                    <div>
+                        <Button v-slot="slotProps" asChild class="p-button-success">
+                            <RouterLink :class="slotProps.class" to="/users/create"> <i class="pi pi-plus"></i> Add User </RouterLink>
+                        </Button>
                     </div>
-                    <Button label="Add Client" icon="pi pi-plus" @click="openAdd" />
                 </div>
             </div>
         </template>
@@ -184,23 +186,14 @@ onMounted(() => {
                 stripedRows
                 tableStyle="min-width: 50rem"
             >
-                <template #empty> No clients found. </template>
-                <template #loading> Loading client data. Please wait... </template>
+                <template #empty> No user found. </template>
+                <template #loading> Loading users data. Please wait... </template>
 
-                <Column field="first_name" header="First Name" :sortable="true" />
-                <Column field="surname" header="Surname" :sortable="true" />
+                <Column field="name" header="Name" :sortable="true" />
+                <Column field="email" header="email" :sortable="true" />
                 <Column field="phone_number" header="Phone Number" />
-                <Column field="email" header="Email" />
-                <Column header="Passport Number">
-                    <template #body="slotProps">
-                        {{ slotProps.data.passport_number || '-' }}
-                    </template>
-                </Column>
-                <Column header="ID Number">
-                    <template #body="slotProps">
-                        {{ slotProps.data.id_number || '-' }}
-                    </template>
-                </Column>
+                
+                
                 <Column header="Created At">
                     <template #body="slotProps">
                         {{ formatDate(slotProps.data.created_at) }}
