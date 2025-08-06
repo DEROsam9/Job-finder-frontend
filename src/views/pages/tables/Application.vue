@@ -102,7 +102,7 @@ const deleteApplication = (id) => {
                     console.log('Customer refresh triggered!');
                     const params = {
                         orderBy: 'created_at',
-                        sortedBy: 'desc'z
+                        sortedBy: 'desc'
                     };
                     await fetchData(params);
                 } else {
