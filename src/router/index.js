@@ -73,6 +73,10 @@ const router = createRouter({
                     component: () => import('@/views/pages/forms/JobForm.vue')
                 },
                 {
+                    path: '/users',
+                    component: () => import('@/views/pages/tables/Users.vue')
+                },
+                {
                     path: '/setting',
                     component: () => import('@/views/pages/Setting.vue')
                 },
