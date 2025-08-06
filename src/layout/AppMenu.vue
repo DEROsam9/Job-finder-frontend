@@ -109,6 +109,11 @@ const model = ref([
         label: 'Settings',
         icon: 'pi pi-cog', // Settings gear
         items: [
+        {
+                label: 'Users',
+                icon: 'pi pi-users', 
+                to: '/users'
+            },
             {
                 label: 'Setting',
                 icon: 'pi pi-spin pi-cog', // Settings
