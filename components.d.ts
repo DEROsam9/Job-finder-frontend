@@ -24,6 +24,7 @@ declare module 'vue' {
     Divider: typeof import('primevue/divider')['default']
     Dropdown: typeof import('primevue/dropdown')['default']
     FeaturesWidget: typeof import('./src/components/landing/FeaturesWidget.vue')['default']
+    FileUpload: typeof import('primevue/fileupload')['default']
     FilterParameters: typeof import('./src/components/Accordion/FilterParameters.vue')['default']
     FloatingConfigurator: typeof import('./src/components/FloatingConfigurator.vue')['default']
     FooterWidget: typeof import('./src/components/landing/FooterWidget.vue')['default']
