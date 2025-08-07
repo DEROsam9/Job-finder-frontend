@@ -18,9 +18,9 @@ export const downloadPaymentsExcel = async (body) => {
         .catch((e) => e.response.data);
 };
 
-export const downloadPaymentPdf = async (id) => {
+export const downloadPaymentPdf = async (applicationPaymentId) => {
     return await api
-        .get(`generate-pdf/${id}`, {
+        .get(`/application-payments/${applicationPaymentId}/receipt`, {
             responseType: 'blob'
         })
         .then((response) => response.data)

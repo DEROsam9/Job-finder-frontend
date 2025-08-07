@@ -109,27 +109,32 @@ const fetchStatusData = async (params) => {
     }
 };
 
-async function downloadPdf(id) {
-    // isLoading.value = true;
+async function downloadPdf(applicationPaymentId) {
+    isLoading.value = true;
     try {
-        const response = await downloadPaymentPdf(id);
+        const response = await downloadPaymentPdf(applicationPaymentId);
         const fileURL = window.URL.createObjectURL(
             new Blob([response], {
                 type: 'application/pdf'
             })
         );
         const fileLink = document.createElement('a');
-        const timestamp = Date.now();
-        const random = Math.floor(Math.random() * 10000);
-        const filename = `payment_receipt_${id}_${timestamp}_${random}.pdf`;
+        const filename = `payment_receipt_${applicationPaymentId}_${new Date().getTime()}.pdf`;
 
         fileLink.href = fileURL;
         fileLink.setAttribute('download', filename);
         document.body.appendChild(fileLink);
 
         fileLink.click();
+
+        // Clean up
+        setTimeout(() => {
+            window.URL.revokeObjectURL(fileURL);
+            document.body.removeChild(fileLink);
+        }, 100);
     } catch (error) {
-        console.log(error);
+        console.error('Error downloading PDF:', error);
+        // Add user feedback here if needed
     } finally {
         isLoading.value = false;
     }
