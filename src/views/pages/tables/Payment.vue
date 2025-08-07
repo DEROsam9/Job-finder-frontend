@@ -1,6 +1,7 @@
 <script setup>
 import { fetchStatuses } from '@/api/common';
-import { fetchPayments, removePayments } from '@/api/payments';
+import { downloadPaymentPdf, downloadPaymentsExcel } from '@/api/downloads';
+import { fetchPayments } from '@/api/payments';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import Menu from 'primevue/menu';
@@ -8,14 +9,12 @@ import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {downloadPaymentsExcel} from "@/api/downloads";
 
 const confirm = useConfirm();
 const toast = useToast();
 const router = useRouter();
 const loading = ref(false);
 const isLoading = ref(false);
-const selectedId = ref(0);
 const payments = ref([]);
 const status = ref([]);
 const filter_params = ref({
@@ -51,7 +50,7 @@ onMounted(() => {
 });
 
 const applyFilters = (params) => {
-    filter_params.value = params
+    filter_params.value = params;
     fetchData(params);
 };
 
@@ -70,48 +69,8 @@ const onPageChange = (event) => {
         orderBy: 'created_at',
         sortedBy: 'desc'
     };
-    filter_params.value = params
+    filter_params.value = params;
     fetchData(params);
-};
-
-const deletePayment = (id) => {
-    selectedId.value = id;
-    confirm.require({
-        message: 'Do you want to delete this record?',
-        header: 'Delete Payment',
-        icon: 'pi pi-info-circle',
-        rejectLabel: 'Cancel',
-        rejectProps: {
-            label: 'Cancel',
-            severity: 'secondary',
-            outlined: true
-        },
-        acceptProps: {
-            label: 'Delete',
-            severity: 'danger'
-        },
-        accept: async () => {
-            try {
-                const response = await removePayments(selectedId.value);
-                if (response.success) {
-                    toast.add({ severity: 'success', summary: 'Deleted', detail: 'Payment deleted successfully', life: 3000 });
-                    const params = {
-                        orderBy: 'created_at',
-                        sortedBy: 'desc'
-                    };
-                    await fetchData(params);
-                } else {
-                    toast.add({ severity: 'warn', summary: 'Failed', detail: 'Could not delete payment', life: 3000 });
-                }
-            } catch (error) {
-                toast.add({ severity: 'error', summary: 'Error', detail: 'An error occurred while deleting', life: 3000 });
-                console.error(error);
-            }
-        },
-        reject: () => {
-            toast.add({ severity: 'info', summary: 'Cancelled', detail: 'Deletion cancelled', life: 3000 });
-        }
-    });
 };
 
 const fetchData = async (params) => {
@@ -150,6 +109,31 @@ const fetchStatusData = async (params) => {
     }
 };
 
+async function downloadPdf(id) {
+    // isLoading.value = true;
+    try {
+        const response = await downloadPaymentPdf(id);
+        const fileURL = window.URL.createObjectURL(
+            new Blob([response], {
+                type: 'application/pdf'
+            })
+        );
+        const fileLink = document.createElement('a');
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000);
+        const filename = `payment_receipt_${id}_${timestamp}_${random}.pdf`;
+
+        fileLink.href = fileURL;
+        fileLink.setAttribute('download', filename);
+        document.body.appendChild(fileLink);
+
+        fileLink.click();
+    } catch (error) {
+        console.log(error);
+    } finally {
+        isLoading.value = false;
+    }
+}
 
 async function downloadExcel() {
     try {
@@ -157,16 +141,13 @@ async function downloadExcel() {
             .then((Response) => {
                 let fileURL = window.URL.createObjectURL(
                     new Blob([Response], {
-                        type: "application/vnd.ms-excel",
+                        type: 'application/vnd.ms-excel'
                     })
                 );
-                let fileLink = document.createElement("a");
+                let fileLink = document.createElement('a');
 
                 fileLink.href = fileURL;
-                fileLink.setAttribute(
-                    "download",
-                    "payments_report_" + Math.round(+new Date() / 1000) + ".xlsx"
-                );
+                fileLink.setAttribute('download', 'payments_report_' + Math.round(+new Date() / 1000) + '.xlsx');
                 document.body.appendChild(fileLink);
 
                 fileLink.click();
@@ -180,8 +161,6 @@ async function downloadExcel() {
         isLoading.value = false;
     }
 }
-
-
 </script>
 
 <template>
@@ -196,23 +175,9 @@ async function downloadExcel() {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion
-                            :status="status"
-                            :showPaidBy="true"
-                            :showPassportId="false"
-                            :showDate="true"
-                            :showStatus="true"
-                            :showAmountRange="true"
-                            :showTransactionRef="true"
-                            @applyFilters="applyFilters"
-                        />
+                        <FilterAccordion :status="status" :showPaidBy="true" :showPassportId="false" :showDate="true" :showStatus="true" :showAmountRange="true" :showTransactionRef="true" @applyFilters="applyFilters" />
                     </div>
-                    <Button
-                        label="Download Excel"
-                        severity="info"
-                        icon="pi pi-download"
-                        @click="downloadExcel"
-                    />
+                    <Button label="Download Excel" severity="info" icon="pi pi-download" @click="downloadExcel" />
                 </div>
             </div>
         </template>
@@ -248,7 +213,7 @@ async function downloadExcel() {
                                         label: 'Download Receipt',
                                         icon: 'pi pi-download',
                                         class: 'menu-item-danger',
-                                        command: () => deletePayment(slotProps.data.id)
+                                        command: () => downloadPdf(slotProps.data.id)
                                     }
                                 ]"
                                 :popup="true"
