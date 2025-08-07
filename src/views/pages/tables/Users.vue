@@ -2,17 +2,15 @@
 import { fetchUsers,removeUser} from '@/api/users.js';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import { formatDate } from '@/utils/index';
-import EditUserModal from '@/views/pages/modals/EditUserModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const confirm = useConfirm();
 const toast = useToast();
 const loading = ref(false);
-const showModal = ref(false);
-const currentUser = ref(null);
 const users = ref([]);
 
 const breadcrumbItems = [{ label: 'Users', to: '/users' }];
@@ -32,28 +30,8 @@ const applyFilters = params => {
     fetchData(params);
 };
 
-const openAdd = () => {
-    currentClient.value = null;
-    showModal.value = true;
-};
-
-// const editUser = (user) => {
-//     currentUser.value = { ...user };
-//     showModal.value = true;
-// };
-
-const editUser=()=>{
-    
-};
-            
-const handleSave = async () => {
-    const params = {
-        page: 1,
-        orderBy: 'created_at',
-        sortedBy: 'desc'
-    };
-    await fetchData(params);
-    showModal.value = false;
+const editUser = userId =>{
+    router.push(`/users/form/${userId}`)
 };
 
 const fetchData = async (params) => {
@@ -164,7 +142,7 @@ onMounted(() => {
                             :showStatus="false"
                             @applyFilters="applyFilters"
                         />
-                    </div> 
+                    </div>
                     <div>
                         <Button v-slot="slotProps" asChild class="p-button-success">
                             <RouterLink :class="slotProps.class" to="/users/create"> <i class="pi pi-plus"></i> Add User </RouterLink>
@@ -175,8 +153,6 @@ onMounted(() => {
         </template>
         <template #content>
             <ConfirmDialog></ConfirmDialog>
-            <EditUserModal v-model:show="showModal" :mode="currentClient ? 'edit' : 'add'" :client="currentUser" @save="handleSave" />
-
             <DataTable
                 :value="users"
                 :paginator="true"
@@ -197,8 +173,8 @@ onMounted(() => {
                 <Column field="name" header="Name" :sortable="true" />
                 <Column field="email" header="email" :sortable="true" />
                 <Column field="phone_number" header="Phone Number" />
-                
-                
+
+
                 <Column header="Created At">
                     <template #body="slotProps">
                         {{ formatDate(slotProps.data.created_at) }}
@@ -217,7 +193,7 @@ onMounted(() => {
                                     {
                                         label: 'Edit',
                                         icon: 'pi pi-pencil',
-                                        command:()=>editUsers(slotProps.data.id)
+                                        command:()=>editUser(slotProps.data.id)
                                     },
                                     {
                                         separator: true

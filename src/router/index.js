@@ -81,7 +81,7 @@ const router = createRouter({
                     component: () => import('@/views/pages/forms/UserForm.vue')
                 },
                 {
-                    path: '/users/form/:id',
+                    path: '/users/form/:userId',
                     component: () => import('@/views/pages/forms/UserForm.vue')
                 },
                 {
@@ -116,7 +116,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
     const auth = useAuthStore();
 
-    
+
     while (auth.token === undefined) {
         await new Promise((resolve) => setTimeout(resolve, 10));
     }
