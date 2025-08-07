@@ -81,6 +81,10 @@ const router = createRouter({
                     component: () => import('@/views/pages/forms/UserForm.vue')
                 },
                 {
+                    path: '/users/form/:id',
+                    component: () => import('@/views/pages/forms/UserForm.vue')
+                },
+                {
                     path: '/setting',
                     component: () => import('@/views/pages/Setting.vue')
                 },

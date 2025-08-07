@@ -1,18 +1,19 @@
 <script setup>
-import { fetchUsers} from '@/api/users.js';
+import { fetchUsers,removeUser} from '@/api/users.js';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import { formatDate } from '@/utils/index';
-import ClientFormModal from '@/views/pages/modals/ClientFormModal.vue';
+import EditUserModal from '@/views/pages/modals/EditUserModal.vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router'
 
 const confirm = useConfirm();
 const toast = useToast();
 const loading = ref(false);
 const showModal = ref(false);
-const currentClient = ref(null);
-const clients = ref([]);
+const currentUser = ref(null);
+const users = ref([]);
 
 const breadcrumbItems = [{ label: 'Users', to: '/users' }];
 
@@ -36,11 +37,15 @@ const openAdd = () => {
     showModal.value = true;
 };
 
-const editClient = (client) => {
-    currentClient.value = { ...client };
-    showModal.value = true;
-};
+// const editUser = (user) => {
+//     currentUser.value = { ...user };
+//     showModal.value = true;
+// };
 
+const editUser=()=>{
+    
+};
+            
 const handleSave = async () => {
     const params = {
         page: 1,
@@ -57,7 +62,7 @@ const fetchData = async (params) => {
 
         const response = await fetchUsers(params);
 
-        clients.value = response.data.data.data || [];
+        users.value = response.data.data.data || [];
 
         // Update pagination
         pagination.current_page = response.data.data.current_page;
@@ -68,11 +73,11 @@ const fetchData = async (params) => {
         console.log(pagination)
 
     } catch (error) {
-        console.error('Error fetching clients:', error);
+        console.error('Error fetching user:', error);
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Failed to fetch clients',
+            detail: 'Failed to fetch users',
             life: 3000
         });
     } finally {
@@ -90,18 +95,18 @@ const onPageChange = (event) => {
     fetchData(params);
 };
 
-const deleteClients = async (id) => {
+const deleteUsers = async (id) => {
     confirm.require({
-        message: 'Do you want to delete this client?',
-        header: 'Delete Client',
+        message: 'Do you want to delete this user?',
+        header: 'Delete User',
         icon: 'pi pi-info-circle',
         accept: async () => {
             try {
-                await removeClient(id);
+                await removeUser(id);
                 toast.add({
                     severity: 'success',
                     summary: 'Deleted',
-                    detail: 'Client deleted successfully',
+                    detail: 'User deleted successfully',
                     life: 3000
                 });
                 const params = {
@@ -114,7 +119,7 @@ const deleteClients = async (id) => {
                 toast.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Failed to delete client',
+                    detail: 'Failed to delete user',
                     life: 3000
                 });
             }
@@ -170,10 +175,10 @@ onMounted(() => {
         </template>
         <template #content>
             <ConfirmDialog></ConfirmDialog>
-            <ClientFormModal v-model:show="showModal" :mode="currentClient ? 'edit' : 'add'" :client="currentClient" @save="handleSave" />
+            <EditUserModal v-model:show="showModal" :mode="currentClient ? 'edit' : 'add'" :client="currentUser" @save="handleSave" />
 
             <DataTable
-                :value="clients"
+                :value="users"
                 :paginator="true"
                 :loading="loading"
                 :rows="pagination.per_page"
@@ -212,7 +217,7 @@ onMounted(() => {
                                     {
                                         label: 'Edit',
                                         icon: 'pi pi-pencil',
-                                        command: () => editClient(slotProps.data)
+                                        command:()=>editUsers(slotProps.data.id)
                                     },
                                     {
                                         separator: true
@@ -222,7 +227,7 @@ onMounted(() => {
                                         severity: 'danger',
                                         icon: 'pi pi-trash',
                                         class: 'menu-item-danger',
-                                        command: () => deleteClients(slotProps.data.id)
+                                        command: () => deleteUsers(slotProps.data.id)
                                     }
                                 ]"
                                 :popup="true"

@@ -4,6 +4,7 @@ import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive,ref } from 'vue';
 import {addUser} from '@/api/users'
+import { useRoute } from 'vue-router'
 
 
 import { FormField } from '@primevue/forms';
@@ -12,7 +13,7 @@ import InputText from 'primevue/inputtext';
 
 
 const breadcrumbItems = ref([
-    { label: 'User', url: '/users' },
+    { label: 'User', url: `/users` },
     { label: 'create user', url: `/users/create` }
 ]);
 
