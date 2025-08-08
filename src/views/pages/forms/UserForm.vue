@@ -91,7 +91,7 @@ const submitForm = async () => {
                 } else {
                     toast.add({
                         severity: 'danger',
-                        summary: 'Success Message',
+                        summary: 'Error Message',
                         detail:  data.message,
                         life: 3000
                     });
@@ -99,11 +99,12 @@ const submitForm = async () => {
             })
             .catch(err => {
                 isLoading.value = false
-                ElNotification({
-                    title: "Error",
+                toast.add({
+                    severity: 'danger',
+                    summary: 'Error Message',
                     message: err.message,
-                    type: "error",
-                })
+                    life: 3000
+                });
             })
             .finally(() => {
                 isLoading.value = false
