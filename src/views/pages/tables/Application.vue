@@ -1,15 +1,15 @@
 <script setup>
 import { fetchApplications, removeApplication } from '@/api/applications';
+import { downloadApplicationsExcel } from '@/api/downloads';
 import axiosClient from '@/axiosClient';
 import FilterAccordion from '@/components/Accordion/FilterParameters.vue';
 import BreadCrumb from '@/components/BreadCrumbs/BreadCrumb.vue';
-import { formatDate, getSeverity } from '@/utils';
+import { formatDate } from '@/utils';
 import Menu from 'primevue/menu';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import {downloadApplicationsExcel} from "@/api/downloads";
 
 const confirm = useConfirm();
 const toast = useToast();
@@ -40,7 +40,7 @@ const applications = ref([]);
 const filters = ref('');
 
 const applyFilters = (params) => {
-    filter_params.value = params
+    filter_params.value = params;
     fetchData(params);
 };
 
@@ -67,7 +67,7 @@ const onPageChange = (event) => {
         orderBy: 'created_at',
         sortedBy: 'desc'
     };
-    filter_params.value = params
+    filter_params.value = params;
     fetchData(params);
 };
 
@@ -125,16 +125,13 @@ async function downloadExcel() {
             .then((Response) => {
                 let fileURL = window.URL.createObjectURL(
                     new Blob([Response], {
-                        type: "application/vnd.ms-excel",
+                        type: 'application/vnd.ms-excel'
                     })
                 );
-                let fileLink = document.createElement("a");
+                let fileLink = document.createElement('a');
 
                 fileLink.href = fileURL;
-                fileLink.setAttribute(
-                    "download",
-                    "application_report_" + Math.round(+new Date() / 1000) + ".xlsx"
-                );
+                fileLink.setAttribute('download', 'application_report_' + Math.round(+new Date() / 1000) + '.xlsx');
                 document.body.appendChild(fileLink);
 
                 fileLink.click();
@@ -186,22 +183,9 @@ const fetchData = async (params) => {
                 <Divider />
                 <div class="flex justify-between items-center flex-wrap">
                     <div>
-                        <FilterAccordion
-                            v-model="filters"
-                            :showNameEmail="false"
-                            :showPassportId="false"
-                            :showDate="true"
-                            :showApplication="true"
-                            :showStatus="true"
-                            @applyFilters="applyFilters"
-                        />
+                        <FilterAccordion v-model="filters" :showNameEmail="false" :showPassportId="false" :showDate="true" :showApplication="true" :showStatus="true" @applyFilters="applyFilters" />
                     </div>
-                    <Button
-                        label="Download Excel"
-                        severity="info"
-                        icon="pi pi-download"
-                        @click="downloadExcel"
-                    />
+                    <Button label="Download Excel" severity="info" icon="pi pi-download" @click="downloadExcel" />
                 </div>
             </div>
         </template>
@@ -299,16 +283,16 @@ const fetchData = async (params) => {
                         </div>
                     </template>
                 </Column>
-                <Column header="Job Applied" style="min-width: 10rem">
+                <!-- <Column header="Job Applied" style="min-width: 10rem">
                     <template #body="slotProps">
                         <div class="flex flex-row">
                             <span class="mr-2">{{ `${slotProps.data?.career?.name}` }}</span>
                         </div>
                     </template>
-                </Column>
+                </Column> -->
                 <Column header="Status" style="min-width: 10rem">
                     <template #body="slotProps">
-                        <Tag :value="slotProps.data.status.name" :severity="getSeverity(slotProps.data.status.name)" />
+                        <Tag :value="slotProps.data?.details?.map((d) => d.status?.name).join(',') || '-'" />
                     </template>
                 </Column>
                 <Column header="Application Date" style="min-width: 10rem">

@@ -38,3 +38,13 @@ export const removeClient = async (id) => {
         throw error;
     }
 };
+
+export const getClientDocuments = async (id) => {
+    try {
+        const response = await api.get(`clientdocs/client/${id}`);
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+};
