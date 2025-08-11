@@ -16,7 +16,7 @@ const route = useRoute();
 const router = useRouter();
 const confirmModal = ref();
 const applicationId = ref(0);
-
+const statuses = ref([]);
 const application = ref(null);
 const loading = ref(true);
 const clientDocuments = ref([]);
@@ -36,6 +36,7 @@ const breadcrumbItems = [
 onMounted(() => {
     applicationId.value = route.params.id;
     fetchApplication();
+    fetchStatuses();
 });
 
 // Fetching application data
@@ -146,15 +147,50 @@ const deleteDocument = async (docId) => {
         });
     }
 };
+
+const fetchStatuses = async () => {
+    try {
+        const response = await axiosClient.get('/v1/statuses');
+        statuses.value = response.data;
+    } catch (error) {
+        console.error('Error fetching statuses:', error);
+    }
+};
+
+// ✅ Update status for a specific application detail
+const updateDetailStatus = async (detail) => {
+    try {
+        await axiosClient.put(`/v1/applicationdetails/${detail.id}`, {
+            status_id: detail.status_id
+        });
+
+        toast.add({
+            severity: 'success',
+            summary: 'Updated',
+            detail: `Status for "${detail.career?.name}" updated successfully`,
+            life: 3000
+        });
+
+        // Optional: Refresh the application so it shows updated names/statuses
+        await fetchApplication();
+    } catch (error) {
+        console.error('Error updating detail status:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to update status',
+            life: 3000
+        });
+    }
+};
 </script>
 
 <template>
     <div class="card">
         <!-- Breadcrumb -->
-
         <BreadCrumb :items="breadcrumbItems" />
 
-        <h2 class="text-2xl font-bold mt-6 mb-4">Application #{{ application?.id }} - {{ application?.application_code }}</h2>
+        <h2 class="text-2xl font-bold mt-6 mb-4 text-surface-900 dark:text-white">Application #{{ application?.id }} - {{ application?.application_code }}</h2>
 
         <div v-if="loading" class="card">
             <div class="rounded border border-surface-200 dark:border-surface-700 p-6 bg-surface-0 dark:bg-surface-900">
@@ -175,64 +211,74 @@ const deleteDocument = async (docId) => {
         </div>
         <div v-else-if="!application" class="text-red-600 font-semibold">Application not found.</div>
 
-        <div v-else class="bg-white rounded-xl shadow p-6 space-y-6">
+        <div v-else class="bg-white dark:bg-surface-800 rounded-xl shadow p-6 space-y-6">
             <!-- Client Info -->
             <section>
-                <h3 class="text-lg font-semibold border-b pb-1 mb-3">Client Information</h3>
+                <h3 class="text-lg font-semibold border-b pb-1 mb-3 text-surface-900 dark:text-white">Client Information</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <p><strong>Name:</strong> {{ application.client?.first_name }} {{ application.client?.middle_name }} {{ application.client?.surname }}</p>
-                    <p><strong>Email:</strong> {{ application.client?.email }}</p>
-                    <p><strong>Phone:</strong> {{ application.client?.phone_number }}</p>
-                    <p><strong>Passport Number:</strong> {{ application.client?.passport_number }}</p>
-                    <p><strong>ID Number:</strong> {{ application.client?.id_number }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Name:</strong> {{ application.client?.first_name }} {{ application.client?.middle_name }} {{ application.client?.surname }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Email:</strong> {{ application.client?.email }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Phone:</strong> {{ application.client?.phone_number }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Passport Number:</strong> {{ application.client?.passport_number }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">ID Number:</strong> {{ application.client?.id_number }}</p>
                 </div>
             </section>
 
             <!-- Application Info -->
             <section>
-                <h3 class="text-lg font-semibold border-b pb-1 mb-3">Application Details</h3>
+                <h3 class="text-lg font-semibold border-b pb-1 mb-3 text-surface-900 dark:text-white">Application Details</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <p><strong>Application Status:</strong> {{ application.status?.name || 'N/A' }}</p>
-                    <p><strong>Experience Brief:</strong> {{ application.remarks || 'N/A' }}</p>
-                    <p><strong>Created At:</strong> {{ formatDate(application.created_at) }}</p>
-                    <p><strong>Updated At:</strong> {{ formatDate(application.updated_at) }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Application Status:</strong> {{ application.status?.name || 'N/A' }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Experience Brief:</strong> {{ application.remarks || 'N/A' }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Created At:</strong> {{ formatDate(application.created_at) }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Updated At:</strong> {{ formatDate(application.updated_at) }}</p>
                 </div>
 
                 <div class="mt-4">
-                    <h4 class="text-md font-semibold mb-2">Careers Applied For:</h4>
-                    <div v-for="detail in application.details" :key="detail.id" class="border rounded-lg p-3 mb-3 bg-gray-50">
-                        <p><strong>Career Title:</strong> {{ detail.career?.name || 'N/A' }}</p>
-                        <p><strong>Status:</strong> {{ detail.status?.name || 'N/A' }}</p>
-                        <p><strong>Detail Created At:</strong> {{ formatDate(detail.created_at) }}</p>
-                        <p v-if="detail.experience_brief"><strong>Experience Brief:</strong> {{ detail.experience_brief }}</p>
+                    <h4 class="text-md font-semibold mb-2 text-surface-900 dark:text-white">Careers Applied For:</h4>
+
+                    <div v-for="detail in application.details" :key="detail.id" class="border rounded-lg p-3 mb-3 bg-gray-50 dark:bg-surface-700">
+                        <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Career Title:</strong> {{ detail.career?.name || 'N/A' }}</p>
+
+                        <!-- Status Selector for Admin -->
+                        <label class="block mt-2 text-sm font-medium text-surface-700 dark:text-surface-300">Update Status:</label>
+                        <select v-model="detail.status_id" @change="updateDetailStatus(detail)" class="border rounded p-1 w-full bg-white dark:bg-surface-600 text-surface-900 dark:text-white">
+                            <option v-for="status in statuses" :key="status.id" :value="status.id">
+                                {{ status.name }}
+                            </option>
+                        </select>
+                        <p class="mt-1 text-gray-500 dark:text-surface-400 text-sm">Current: {{ detail.status?.name || 'N/A' }}</p>
+
+                        <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Detail Created At:</strong> {{ formatDate(detail.created_at) }}</p>
+                        <p v-if="detail.experience_brief" class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Experience Brief:</strong> {{ detail.experience_brief }}</p>
                     </div>
                 </div>
             </section>
 
             <!-- Documents -->
             <section>
-                <h3 class="text-lg font-semibold border-b pb-1 mb-3">Uploaded Documents</h3>
+                <h3 class="text-lg font-semibold border-b pb-1 mb-3 text-surface-900 dark:text-white">Uploaded Documents</h3>
 
-                <div v-if="loadingDocuments" class="text-gray-600">Loading documents...</div>
-                <div v-else-if="clientDocuments.length === 0" class="text-gray-600">No documents uploaded.</div>
+                <div v-if="loadingDocuments" class="text-gray-600 dark:text-surface-400">Loading documents...</div>
+                <div v-else-if="clientDocuments.length === 0" class="text-gray-600 dark:text-surface-400">No documents uploaded.</div>
 
                 <ul v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    <li v-for="doc in clientDocuments" :key="doc.id" class="bg-gray-100 p-4 rounded shadow">
-                        <div class="mb-2 font-medium capitalize">
+                    <li v-for="doc in clientDocuments" :key="doc.id" class="bg-gray-100 dark:bg-surface-700 p-4 rounded shadow">
+                        <div class="mb-2 font-medium capitalize text-surface-900 dark:text-white">
                             {{ doc.document_type }}
-                            <span v-if="doc.passport_expiry_date" class="text-sm text-gray-500"> (Expiry: {{ formatDate(doc.passport_expiry_date) }}) </span>
+                            <span v-if="doc.passport_expiry_date" class="text-sm text-gray-500 dark:text-surface-400"> (Expiry: {{ formatDate(doc.passport_expiry_date) }}) </span>
                         </div>
 
                         <!-- Image preview or fallback -->
-                        <div class="w-full h-48 bg-white border rounded overflow-hidden flex items-center justify-center">
+                        <div class="w-full h-48 bg-white dark:bg-surface-600 border rounded overflow-hidden flex items-center justify-center">
                             <!-- If image -->
                             <a v-if="isImage(doc.document_url)" :href="doc.document_url" target="_blank" rel="noopener noreferrer" class="w-full h-full">
                                 <img :src="doc.document_url" alt="Document Image" class="object-contain w-full h-full cursor-pointer" />
                             </a>
                             <!-- If not image -->
-                            <div v-else class="text-gray-600 text-sm text-center p-4">
+                            <div v-else class="text-gray-600 dark:text-surface-300 text-sm text-center p-4">
                                 File:
-                                <a :href="doc.document_url" target="_blank" class="text-blue-600 hover:underline"> View Document </a>
+                                <a :href="doc.document_url" target="_blank" class="text-blue-600 hover:underline dark:text-blue-400"> View Document </a>
                             </div>
                         </div>
 
@@ -246,7 +292,16 @@ const deleteDocument = async (docId) => {
 
                             <!-- Show status badge -->
                             <template v-else>
-                                <span :class="['px-3 py-1 rounded-full text-xs font-semibold', doc.status === 'Verified' ? 'bg-green-100 text-green-700' : doc.status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700']">
+                                <span
+                                    :class="[
+                                        'px-3 py-1 rounded-full text-xs font-semibold',
+                                        doc.status === 'Verified'
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100'
+                                            : doc.status === 'Rejected'
+                                              ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100'
+                                              : 'bg-gray-200 text-gray-700 dark:bg-surface-600 dark:text-surface-300'
+                                    ]"
+                                >
                                     {{ doc.status }}
                                 </span>
                             </template>
@@ -257,13 +312,13 @@ const deleteDocument = async (docId) => {
 
             <!-- Payment -->
             <section>
-                <h3 class="text-lg font-semibold border-b pb-1 mb-3">Payment Details</h3>
+                <h3 class="text-lg font-semibold border-b pb-1 mb-3 text-surface-900 dark:text-white">Payment Details</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <p><strong>Amount:</strong> {{ application.payment?.amount }}</p>
-                    <p><strong>Status:</strong> {{ application.payment?.status?.name || 'Pending' }}</p>
-                    <p><strong>Remarks:</strong> {{ application.payment?.remarks }}</p>
-                    <p><strong>MerchantRequestID:</strong> {{ application.payment?.merchant_request_id }}</p>
-                    <p><strong>CheckoutRequestID:</strong> {{ application.payment?.checkout_request_id }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Amount:</strong> {{ application.payment?.amount }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Status:</strong> {{ application.payment?.status?.name || 'Pending' }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">Remarks:</strong> {{ application.payment?.remarks }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">MerchantRequestID:</strong> {{ application.payment?.merchant_request_id }}</p>
+                    <p class="text-surface-700 dark:text-surface-300"><strong class="text-surface-900 dark:text-white">CheckoutRequestID:</strong> {{ application.payment?.checkout_request_id }}</p>
                 </div>
             </section>
         </div>
@@ -275,8 +330,8 @@ const deleteDocument = async (docId) => {
         <!-- Reject Modal -->
         <DocumentModal v-if="showRejectModal" header="Reject Document" @submit="handleRejectSubmit" @cancel="() => (showRejectModal = false)">
             <div class="space-y-2">
-                <label for="reason" class="block text-sm font-medium">Reason for rejection:</label>
-                <textarea id="reason" v-model="rejectionReason" rows="4" class="w-full border rounded p-2"></textarea>
+                <label for="reason" class="block text-sm font-medium text-surface-700 dark:text-surface-300">Reason for rejection:</label>
+                <textarea id="reason" v-model="rejectionReason" rows="4" class="w-full border rounded p-2 bg-white dark:bg-surface-600 text-surface-900 dark:text-white"></textarea>
             </div>
         </DocumentModal>
         <ConfirmModal ref="confirmModal" />

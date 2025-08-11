@@ -292,7 +292,7 @@ const fetchData = async (params) => {
                 </Column> -->
                 <Column header="Status" style="min-width: 10rem">
                     <template #body="slotProps">
-                        <Tag :value="slotProps.data?.details?.map((d) => d.status?.name).join(',') || '-'" />
+                        <Tag :value="slotProps.data?.status?.name" />
                     </template>
                 </Column>
                 <Column header="Application Date" style="min-width: 10rem">
